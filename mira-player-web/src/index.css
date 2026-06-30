@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/montserrat/600.css";
+@import "@fontsource/montserrat/700.css";
+@import "@fontsource/montserrat/800.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Montserrat", sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --color-fg: var(--c-text);
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-bg-el);
+  --color-selected: var(--c-bg-sel);
+  --color-muted: var(--c-text-sec);
+  --color-tint: var(--c-tint);
+  --color-accent: var(--c-accent);
+  --color-on-tint: var(--c-on-tint);
+  --color-border: var(--c-border);
+  --color-danger: var(--c-danger);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+:root {
+  --c-text: #272727;
+  --c-bg: #FAF6EF;
+  --c-bg-el: #F1EADF;
+  --c-bg-sel: #E7DDCB;
+  --c-text-sec: #7C746A;
+  --c-tint: #D4AA7D;
+  --c-accent: #8A5A2E;
+  --c-on-tint: #272727;
+  --c-border: #E5DBCA;
+  --c-danger: #B4453B;
+}
+
+.dark {
+  --c-text: #F3EEE6;
+  --c-bg: #272727;
+  --c-bg-el: #323230;
+  --c-bg-sel: #3C3B38;
+  --c-text-sec: #A39C90;
+  --c-tint: #D4AA7D;
+  --c-accent: #D4AA7D;
+  --c-on-tint: #272727;
+  --c-border: #3B3A37;
+  --c-danger: #E0857A;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-text-sec);
+}
