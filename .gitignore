@@ -20,3 +20,4 @@ mira-player-mobile/ios/build/
 .env
 .env.local
 .env.*.local
+tsconfig.tsbuildinfo
