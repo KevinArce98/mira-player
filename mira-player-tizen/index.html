@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080, user-scalable=no" />
+    <title>Mira Player</title>
+    <!-- Device API de Samsung. Solo resuelve en la TV; en navegador da 404 y se ignora. -->
+    <script src="$WEBAPIS/webapis/webapis.js"></script>
+  </head>
+  <body>
+    <object type="application/avplayer" id="av-player"></object>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

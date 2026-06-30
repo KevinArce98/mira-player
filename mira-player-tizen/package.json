@@ -1,0 +1,18 @@
+{
+  "name": "mira-player-tizen",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mira Player para Samsung Tizen (TV) — cliente IPTV Xtream Codes con AVPlay nativo",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "deploy": "sdb connect 192.168.1.14:26101 && tizen install -n MiraPlayer.wgt -s 192.168.1.14:26101 -- . && tizen run -p MiraPlayer.MiraPlayer -s 192.168.1.14:26101",
+    "clean": "rm -rf dist .wgt-build *.wgt"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0"
+  }
+}

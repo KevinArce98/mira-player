@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://mira-player.app/tizen"
+        version="1.0.0">
+  <tizen:application id="MiraPlayer.MiraPlayer"
+                     package="MiraPlayer"
+                     required_version="2.4"/>
+  <name>Mira Player</name>
+  <content src="index.html"/>
+  <icon src="icon.png"/>
+  <tizen:profile name="tv-samsung"/>
+  <access origin="*" subdomains="true"/>
+  <tizen:privilege name="http://tizen.org/privilege/internet"/>
+  <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+  <tizen:setting screen-orientation="landscape" hwkey-event="enable"/>
+</widget>
