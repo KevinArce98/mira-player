@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="XtreamTask" extends="Task">
+  <interface>
+    <field id="credentials" type="assocarray" />
+    <field id="request" type="assocarray" onChange="onRequest" />
+    <field id="response" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/tasks/XtreamTask.brs" />
+</component>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="HomeScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" onChange="onCredentialsSet" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/HomeScreen.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+
+    <!-- Sidebar -->
+    <Rectangle width="260" height="720" color="0x111111FF" />
+    <Label text="Mira" translation="[24, 36]" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+    <Label text="TV" translation="[82, 36]" font="font:MediumBoldSystemFont" color="0xD4AA7DFF" />
+
+    <!-- Nav list -->
+    <LabelList
+      id="navList"
+      translation="[0, 110]"
+      numRows="6"
+      itemSize="[260, 60]"
+      itemSpacing="[0, 2]"
+      font="font:SmallBoldSystemFont"
+      color="0xCCCCCCFF"
+      focusedColor="0x1A1A1AFF"
+      focusBitmapBlendColor="0xD4AA7DFF"
+      drawFocusFeedback="true"
+    />
+
+    <!-- Content header -->
+    <Label id="contentTitle" text="Inicio" translation="[290, 36]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+
+    <!-- Favorites grid -->
+    <PosterGrid
+      id="favGrid"
+      translation="[280, 90]"
+      numColumns="5"
+      itemSize="[180, 200]"
+      itemSpacing="[10, 10]"
+      posterDisplayMode="scaleToZoom"
+      visible="false"
+    />
+
+    <!-- Empty / loading state -->
+    <Label id="stateLabel" text="Cargando favoritos…" color="0x999999FF" translation="[290, 300]" visible="false" />
+
+    <!-- Spinner -->
+    <BusySpinner id="spinner" translation="[740, 350]" visible="false" />
+  </children>
+</component>

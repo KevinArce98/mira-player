@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LiveScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" onChange="onCredentialsSet" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/LiveScreen.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+
+    <!-- Header -->
+    <Rectangle width="1280" height="70" color="0x111111FF" />
+    <Label text="TV en vivo" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+    <Label text="← Atrás" translation="[1150, 25]" color="0x999999FF" />
+
+    <!-- Category list (left panel) -->
+    <Rectangle width="280" height="650" color="0x111111FF" translation="[0, 70]" />
+    <LabelList
+      id="categoryList"
+      translation="[0, 70]"
+      numRows="11"
+      itemSize="[280, 56]"
+      itemSpacing="[0, 2]"
+      font="font:SmallSystemFont"
+      color="0xCCCCCCFF"
+      focusedColor="0x1A1A1AFF"
+      focusBitmapBlendColor="0xD4AA7DFF"
+      drawFocusFeedback="true"
+    />
+
+    <!-- Channel list (right panel) -->
+    <LabelList
+      id="channelList"
+      translation="[290, 70]"
+      numRows="11"
+      itemSize="[990, 56]"
+      itemSpacing="[0, 2]"
+      font="font:SmallSystemFont"
+      color="0xCCCCCCFF"
+      focusedColor="0x1A1A1AFF"
+      focusBitmapBlendColor="0xD4AA7DFF"
+      drawFocusFeedback="true"
+    />
+
+    <!-- State label -->
+    <Label id="stateLabel" text="Cargando categorías…" color="0x999999FF" translation="[640, 350]" visible="true" />
+
+    <!-- Spinner -->
+    <BusySpinner id="spinner" translation="[620, 380]" visible="true" />
+  </children>
+</component>

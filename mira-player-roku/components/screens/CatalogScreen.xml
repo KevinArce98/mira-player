@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="CatalogScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" onChange="onCredentialsSet" />
+    <field id="contentType" type="string" value="movie" />
+    <field id="sectionTitle" type="string" value="Películas" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/CatalogScreen.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+
+    <!-- Header -->
+    <Rectangle width="1280" height="70" color="0x111111FF" />
+    <Label id="headerTitle" text="Películas" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+    <Label id="sortLabel" text="" translation="[1220, 25]" color="0xD4AA7DFF" font="font:SmallSystemFont" horizAlign="right" />
+    <Label text="Verde: Buscar   *: Ordenar" translation="[880, 25]" color="0x555555FF" font="font:SmallSystemFont" />
+
+    <!-- Category list (top bar) -->
+    <LabelList
+      id="categoryList"
+      translation="[0, 70]"
+      numRows="11"
+      itemSize="[280, 54]"
+      itemSpacing="[0, 2]"
+      font="font:SmallSystemFont"
+      color="0xCCCCCCFF"
+      focusedColor="0x1A1A1AFF"
+      focusBitmapBlendColor="0xD4AA7DFF"
+      drawFocusFeedback="true"
+    />
+
+    <!-- Poster grid -->
+    <PosterGrid
+      id="posterGrid"
+      translation="[290, 80]"
+      numColumns="5"
+      numRows="3"
+      itemSize="[186, 260]"
+      itemSpacing="[8, 12]"
+      posterDisplayMode="scaleToZoom"
+    />
+
+    <!-- State label -->
+    <Label id="stateLabel" text="Cargando…" color="0x999999FF" translation="[640, 350]" visible="true" />
+
+    <!-- Spinner -->
+    <BusySpinner id="spinner" translation="[620, 380]" visible="true" />
+
+  </children>
+</component>

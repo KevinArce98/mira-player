@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SettingsScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/SettingsScreen.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+    <Rectangle width="1280" height="70" color="0x111111FF" />
+    <Label text="Ajustes" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+
+    <!-- Account info -->
+    <Label text="Cuenta" translation="[50, 110]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
+    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 134]" />
+    <Label id="serverInfo" text="" translation="[50, 148]" color="0xCCCCCCFF" />
+    <Label id="userInfo" text="" translation="[50, 180]" color="0xCCCCCCFF" />
+    <Label id="expiryInfo" text="" translation="[50, 212]" color="0xCCCCCCFF" />
+    <Label id="statusInfo" text="" translation="[50, 244]" color="0xCCCCCCFF" />
+
+    <!-- Actions -->
+    <Label text="Acciones" translation="[50, 300]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
+    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 324]" />
+
+    <Rectangle id="logoutBtn" width="300" height="54" color="0x2A2A2AFF" translation="[50, 338]">
+      <Label text="Cerrar sesión" color="0xFF5555FF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
+    </Rectangle>
+
+    <BusySpinner id="spinner" translation="[620, 350]" visible="true" />
+    <Label id="stateLabel" text="Cargando información de cuenta…" color="0x999999FF" translation="[50, 450]" />
+  </children>
+</component>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="DetailScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" />
+    <field id="contentData" type="assocarray" />
+    <field id="contentType" type="string" value="movie" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/DetailScreen.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+
+    <!-- Poster -->
+    <Rectangle width="260" height="370" color="0x2A2A2AFF" translation="[50, 90]" />
+    <Poster id="poster" width="260" height="370" translation="[50, 90]" loadDisplayMode="scaleToZoom" />
+
+    <!-- Info area -->
+    <Label id="titleLabel" text="" translation="[340, 90]" width="860" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" wrap="true" />
+    <Label id="metaLabel" text="" translation="[340, 150]" color="0x999999FF" />
+    <Label id="genreLabel" text="" translation="[340, 185]" color="0xD4AA7DFF" />
+    <Label id="descLabel" text="" translation="[340, 230]" width="860" color="0xCCCCCCFF" wrap="true" maxLines="4" />
+    <Label id="castLabel" text="" translation="[340, 350]" width="860" color="0x999999FF" wrap="true" maxLines="2" />
+
+    <!-- Action buttons -->
+    <Rectangle id="playBtn" width="220" height="54" color="0xD4AA7DFF" translation="[340, 430]">
+      <Label id="playBtnLabel" text="Reproducir" color="0x1A1A1AFF" translation="[30, 14]" font="font:MediumBoldSystemFont" />
+    </Rectangle>
+    <Rectangle id="favBtn" width="220" height="54" color="0x2A2A2AFF" translation="[580, 430]">
+      <Label id="favBtnLabel" text="Favorito" color="0xFFFFFFFF" translation="[30, 14]" font="font:MediumBoldSystemFont" />
+    </Rectangle>
+
+    <!-- Series episode list -->
+    <Rectangle id="episodePanel" width="880" height="230" color="0x111111FF" translation="[340, 500]" visible="false">
+      <Label id="seasonLabel" text="Temporada 1" translation="[14, 10]" color="0xD4AA7DFF" font="font:SmallBoldSystemFont" />
+      <LabelList
+        id="episodeList"
+        translation="[0, 40]"
+        numRows="4"
+        itemSize="[880, 44]"
+        font="font:SmallSystemFont"
+        color="0xCCCCCCFF"
+        focusedColor="0x1A1A1AFF"
+        focusBitmapBlendColor="0xD4AA7DFF"
+        drawFocusFeedback="true"
+      />
+    </Rectangle>
+
+    <!-- Spinner -->
+    <BusySpinner id="spinner" translation="[620, 500]" visible="false" />
+
+    <!-- Focus index: 0=play, 1=fav, 2=episodes -->
+    <Label id="focusHint" text="" translation="[340, 500]" color="0x666666FF" />
+  </children>
+</component>

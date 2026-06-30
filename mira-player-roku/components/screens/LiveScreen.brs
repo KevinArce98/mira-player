@@ -1,0 +1,145 @@
+sub init()
+    m.categoryList = m.top.FindNode("categoryList")
+    m.channelList = m.top.FindNode("channelList")
+    m.stateLabel = m.top.FindNode("stateLabel")
+    m.spinner = m.top.FindNode("spinner")
+
+    m.categories = []
+    m.channelsByCategory = {}
+    m.currentCategoryId = ""
+    m.panelFocus = "categories"
+
+    m.task = CreateObject("roSGNode", "XtreamTask")
+    m.task.ObserveField("response", "onResponse")
+
+    m.categoryList.ObserveField("itemFocused", "onCategoryFocused")
+    m.categoryList.ObserveField("itemSelected", "onCategorySelected")
+    m.channelList.ObserveField("itemSelected", "onChannelSelected")
+    m.top.ObserveField("focusedChild", "onFocusChanged")
+end sub
+
+sub onFocusChanged()
+    if not m.top.IsInFocusChain() then return
+    if m.panelFocus = "channels"
+        if not m.channelList.IsInFocusChain() then m.channelList.SetFocus(true)
+    else
+        if not m.categoryList.IsInFocusChain() then m.categoryList.SetFocus(true)
+    end if
+end sub
+
+sub onCredentialsSet()
+    if m.top.credentials = invalid then return
+    m.task.credentials = m.top.credentials
+    m.pendingAction = "categories"
+    m.task.request = {action: "get_live_categories"}
+end sub
+
+sub onResponse()
+    response = m.task.response
+    m.spinner.visible = false
+
+    if not response.success
+        m.stateLabel.text = "Error: " + response.error
+        m.stateLabel.visible = true
+        return
+    end if
+
+    if m.pendingAction = "categories"
+        m.stateLabel.visible = false
+        buildCategoryList(response.data)
+    else if m.pendingAction = "channels"
+        buildChannelList(response.data)
+    end if
+end sub
+
+sub buildCategoryList(data as Object)
+    m.categories = [{category_id: "", category_name: "Todos"}]
+    for each cat in data
+        m.categories.Push(cat)
+    end for
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each cat in m.categories
+        row = CreateObject("roSGNode", "ContentNode")
+        row.title = "  " + CleanText(SafeStr(cat["category_name"]))
+        content.AppendChild(row)
+    end for
+    m.categoryList.content = content
+    m.categoryList.SetFocus(true)
+
+    loadChannels("")
+end sub
+
+sub loadChannels(categoryId as String)
+    m.currentCategoryId = categoryId
+    m.spinner.visible = true
+    m.pendingAction = "channels"
+
+    req = {action: "get_live_streams"}
+    if categoryId <> ""
+        req.category_id = categoryId
+    end if
+    m.task.request = req
+end sub
+
+sub buildChannelList(data as Object)
+    m.currentChannels = data
+    content = CreateObject("roSGNode", "ContentNode")
+    for each ch in data
+        row = CreateObject("roSGNode", "ContentNode")
+        row.title = "  " + CleanText(SafeStr(ch["name"]))
+        content.AppendChild(row)
+    end for
+    m.channelList.content = content
+
+    if data.Count() = 0
+        m.stateLabel.text = "Sin canales en esta categoría."
+        m.stateLabel.visible = true
+    else
+        m.stateLabel.visible = false
+    end if
+end sub
+
+sub onCategoryFocused(event as Object)
+    idx = event.GetData()
+    if idx < 0 or idx >= m.categories.Count() then return
+    cat = m.categories[idx]
+    categoryId = SafeStr(cat["category_id"])
+    if categoryId <> m.currentCategoryId
+        loadChannels(categoryId)
+    end if
+end sub
+
+sub onCategorySelected(event as Object)
+    m.panelFocus = "channels"
+    m.channelList.SetFocus(true)
+end sub
+
+sub onChannelSelected(event as Object)
+    idx = event.GetData()
+    if m.currentChannels = invalid then return
+    ch = m.currentChannels[idx]
+    creds = m.top.credentials
+    streamId = SafeStr(ch["stream_id"])
+    url = LiveStreamUrl(creds.server, creds.username, creds.password, streamId)
+    m.top.navigate = {
+        screen: "PlayerScreen",
+        params: {streamUrl: url, contentTitle: SafeStr(ch["name"]), credentials: creds}
+    }
+end sub
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    if not press then return false
+
+    if key = "back"
+        if m.panelFocus = "channels"
+            m.panelFocus = "categories"
+            m.categoryList.SetFocus(true)
+            return true
+        end if
+        m.top.navigate = {screen: "back", params: {}}
+        return true
+    end if
+
+    return false
+end function

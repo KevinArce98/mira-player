@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="PlayerScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" />
+    <field id="streamUrl" type="string" value="" />
+    <field id="contentTitle" type="string" value="" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/PlayerScreen.brs" />
+  <children>
+    <Rectangle id="bg" width="1280" height="720" color="0x000000FF" />
+    <BusySpinner id="spinner" translation="[615, 330]" visible="true" />
+    <Label id="errorLabel" text="" translation="[340, 340]" color="0xFF5555FF" visible="false" width="600" wrap="true" />
+    <Group id="osd" visible="false">
+      <Rectangle width="1280" height="110" color="0x000000BB" translation="[0, 0]" />
+      <Label id="osdTitle" text="" translation="[50, 30]" color="0xFFFFFFFF" width="1100" font="font:LargeBoldSystemFont" />
+      <Label id="osdTime" text="" translation="[1150, 75]" color="0x999999FF" />
+      <Label id="liveLabel" text="EN VIVO" translation="[50, 75]" color="0xFF4444FF" font="font:SmallBoldSystemFont" visible="false" />
+      <Rectangle width="1280" height="6" color="0x333333FF" translation="[0, 104]" />
+      <Rectangle id="progressBar" width="4" height="6" color="0xD4AA7DFF" translation="[0, 104]" />
+    </Group>
+  </children>
+</component>
