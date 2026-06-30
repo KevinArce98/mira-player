@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+
+# Build outputs
+dist/
+mira-player-web/dist/
+
+# iOS
+mira-player-mobile/ios/Pods/
+mira-player-mobile/ios/build/
+
+# Environment
+.env
+.env.local
+.env.*.local
