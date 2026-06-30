@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.buildResult/
+*.wgt
+.tizen-cli-history
+.DS_Store
+
+.wgt-build/
