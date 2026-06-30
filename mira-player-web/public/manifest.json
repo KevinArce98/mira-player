@@ -1,0 +1,19 @@
+{
+  "name": "Mira Player",
+  "short_name": "Mira Player",
+  "description": "Tu catálogo IPTV personal",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#272727",
+  "theme_color": "#272727",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

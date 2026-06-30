@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src * data: blob:; media-src * blob:; connect-src *; frame-src https://www.youtube.com https://www.youtube-nocookie.com; worker-src 'self' blob:; font-src 'self' data:; manifest-src 'self';" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <title>Mira Player</title>
+    <meta name="description" content="Tu catálogo IPTV personal" />
+    <meta name="application-name" content="Mira Player" />
+
+    <meta name="theme-color" content="#FAF6EF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#272727" media="(prefers-color-scheme: dark)" />
+
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Mira Player" />
+
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
