@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidad · Mira</title>
+  <style>
+    :root {
+      --bg: #f9f9f9;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #555;
+      --accent: #D4AA7D;
+      --border: #e0e0e0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a1a;
+        --card: #272727;
+        --text: #f0f0f0;
+        --muted: #aaa;
+        --border: #3a3a3a;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 3rem; }
+    .brand { font-size: 2rem; font-weight: 700; letter-spacing: 0.5px; }
+    .brand span { color: var(--accent); }
+    header p { color: var(--muted); margin-top: 0.5rem; font-size: 0.9rem; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .lang-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #272727;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 1.25rem;
+    }
+    .nav { text-align: center; margin-bottom: 2rem; font-size: 0.9rem; }
+    .nav a { margin: 0 1rem; color: var(--accent); }
+    h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+    h3 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+    p { color: var(--muted); font-size: 0.95rem; margin-bottom: 0.75rem; }
+    ul { color: var(--muted); font-size: 0.95rem; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">Mi<span>ra</span></div>
+      <p>Política de Privacidad · Privacy Policy</p>
+    </header>
+
+    <div class="nav">
+      <a href="../terms/">Términos y Condiciones · Terms and Conditions</a>
+    </div>
+
+    <section>
+      <div class="lang-badge">Español</div>
+      <h2>Política de Privacidad</h2>
+      <p><strong>Última actualización:</strong> junio de 2026</p>
+
+      <h3>¿Qué datos recopila Mira?</h3>
+      <p>Mira <strong>no recopila, almacena ni transmite ningún dato personal</strong> a los servidores del desarrollador. La aplicación funciona íntegramente en tu dispositivo.</p>
+
+      <h3>Credenciales de tu proveedor de medios</h3>
+      <p>Las credenciales de tu cuenta (usuario y contraseña) se guardan <strong>únicamente en el almacenamiento seguro de tu dispositivo</strong>:</p>
+      <ul>
+        <li>iOS: Keychain (a través de Expo SecureStore)</li>
+        <li>Android: EncryptedSharedPreferences (a través de Expo SecureStore)</li>
+      </ul>
+      <p>La contraseña <strong>nunca</strong> se escribe en la base de datos local ni se envía a ningún servidor que no sea el de tu propio proveedor de medios.</p>
+
+      <h3>Catálogo y progreso</h3>
+      <p>El catálogo de medios de tu servidor, así como tu historial de reproducción y favoritos, se almacenan en una base de datos SQLite <strong>local en tu dispositivo</strong>. Estos datos no salen del dispositivo.</p>
+
+      <h3>Conexiones de red</h3>
+      <p>Mira solo realiza conexiones de red hacia el servidor de tu proveedor de medios (la dirección que tú introduces en la configuración). No existe ningún servidor de analítica, publicidad ni seguimiento de terceros.</p>
+
+      <h3>Modo demo</h3>
+      <p>El modo demo integrado reproduce contenido con licencia Creative Commons almacenado en servidores públicos de terceros (Google CDN y Mux). No se transmite ningún dato personal a estos servidores durante la reproducción.</p>
+
+      <h3>Analítica y rastreo</h3>
+      <p>Mira <strong>no utiliza ninguna herramienta de analítica</strong>, publicidad ni rastreo de comportamiento. No se usan cookies ni identificadores de publicidad.</p>
+
+      <h3>Menores de edad</h3>
+      <p>Mira no recopila datos de ningún usuario, incluyendo menores de edad. El contenido al que se puede acceder depende exclusivamente del catálogo que ofrezca el proveedor configurado.</p>
+
+      <h3>Cambios en esta política</h3>
+      <p>Si se actualiza esta política, se publicará la versión nueva en esta misma URL con la fecha de actualización.</p>
+
+      <h3>Contacto</h3>
+      <p>Para cualquier consulta sobre privacidad: <a href="mailto:arias9068@gmail.com">arias9068@gmail.com</a></p>
+    </section>
+
+    <section>
+      <div class="lang-badge">English</div>
+      <h2>Privacy Policy</h2>
+      <p><strong>Last updated:</strong> June 2026</p>
+
+      <h3>What data does Mira collect?</h3>
+      <p>Mira <strong>does not collect, store, or transmit any personal data</strong> to the developer's servers. The app operates entirely on your device.</p>
+
+      <h3>Your media provider credentials</h3>
+      <p>Your account credentials (username and password) are stored <strong>exclusively in your device's secure storage</strong>:</p>
+      <ul>
+        <li>iOS: Keychain (via Expo SecureStore)</li>
+        <li>Android: EncryptedSharedPreferences (via Expo SecureStore)</li>
+      </ul>
+      <p>Your password is <strong>never</strong> written to the local database or sent to any server other than your own media provider's server.</p>
+
+      <h3>Catalog and playback progress</h3>
+      <p>Your server's media catalog, along with your playback history and favorites, are stored in a SQLite database <strong>locally on your device</strong>. This data never leaves the device.</p>
+
+      <h3>Network connections</h3>
+      <p>Mira only makes network connections to your media provider's server (the address you enter in the setup screen). There are no analytics, advertising, or third-party tracking servers.</p>
+
+      <h3>Demo mode</h3>
+      <p>The built-in demo mode plays Creative Commons licensed content hosted on public third-party servers (Google CDN and Mux). No personal data is transmitted to these servers during playback.</p>
+
+      <h3>Analytics and tracking</h3>
+      <p>Mira <strong>does not use any analytics tools</strong>, advertising networks, or behavior tracking. No cookies or advertising identifiers are used.</p>
+
+      <h3>Children</h3>
+      <p>Mira does not collect data from any user, including children. Accessible content depends solely on the catalog offered by the configured provider.</p>
+
+      <h3>Changes to this policy</h3>
+      <p>If this policy is updated, the new version will be published at this same URL with the updated date.</p>
+
+      <h3>Contact</h3>
+      <p>Privacy inquiries: <a href="mailto:arias9068@gmail.com">arias9068@gmail.com</a></p>
+    </section>
+
+    <footer>
+      <p>Mira &copy; 2026 · Kevin Arias</p>
+    </footer>
+  </div>
+</body>
+</html>
