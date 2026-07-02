@@ -61,7 +61,7 @@ export function createSetupScreen(): Screen {
       ]);
 
       const screen = el('div', { class: 'screen setup' }, [
-        el('div', { class: 'brand', html: 'MIRA<span class="dot">·</span>TV', style: 'font-size:48px;margin-bottom:8px' }),
+        el('div', { class: 'brand', html: 'MIRA<span class="dot">·</span>', style: 'font-size:48px;margin-bottom:8px' }),
         el('div', { class: 'screen-subtitle', html: 'Conecta tu cuenta Xtream Codes' }),
         card,
       ]);

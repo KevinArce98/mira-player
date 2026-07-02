@@ -34,6 +34,15 @@ export async function reset(factory: ScreenFactory): Promise<void> {
   await navigate(factory);
 }
 
+// Reemplaza solo la pantalla activa (p.ej. episodio actual -> siguiente
+// episodio), sin apilar una entrada nueva ni afectar el resto de la pila.
+export async function replace(factory: ScreenFactory): Promise<void> {
+  stack.pop()?.onExit?.();
+  const screen = factory();
+  stack.push(screen);
+  await show(screen);
+}
+
 export async function back(): Promise<boolean> {
   if (stack.length <= 1) return false;
   stack.pop()?.onExit?.();

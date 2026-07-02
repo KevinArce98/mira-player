@@ -7,13 +7,25 @@ import { Key } from '@/core/keys';
 import type { MediaItem, MediaKind } from '@/core/media';
 import { continueWatching, type ProgressEntry } from '@/core/progress';
 import { listFavorites } from '@/core/favorites';
+import { loadParental, setAdultEnabled, setPin } from '@/core/parental';
 import { el } from './dom';
-import { mediaCard, toggleCardFavorite, escapeHtml } from './cards';
+import { mediaCard, continueCard, toggleCardFavorite, escapeHtml } from './cards';
 import { openMedia } from './actions';
 import { createPlayerScreen } from './player-screen';
+import { createDetailScreen } from './detail';
 import { createSetupScreen } from './setup';
 
-type Tab = 'home' | 'live' | 'movies' | 'series' | 'search';
+type Tab = 'home' | 'live' | 'movies' | 'series' | 'search' | 'settings';
+
+const ICONS: Record<Tab | 'exit', string> = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>',
+  live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 21h8"/></svg>',
+  movies: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18"/><path d="M7 5l3 4M13 5l3 4"/></svg>',
+  series: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
+  exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+};
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'home', label: 'Inicio' },
@@ -21,6 +33,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'movies', label: 'Películas' },
   { id: 'series', label: 'Series' },
   { id: 'search', label: 'Buscar' },
+  { id: 'settings', label: 'Ajustes' },
 ];
 
 const KIND_OF: Record<'live' | 'movies' | 'series', MediaKind> = {
@@ -49,6 +62,7 @@ export function createHomeScreen(): Screen {
     try {
       if (activeTab === 'home') await renderHome();
       else if (activeTab === 'search') renderSearch();
+      else if (activeTab === 'settings') renderSettings();
       else await renderCatalog(KIND_OF[activeTab]);
     } catch (e) {
       content.innerHTML = '';
@@ -72,6 +86,47 @@ export function createHomeScreen(): Screen {
     return (await library.content(kind, cats[0]?.category_id)).slice(0, 24);
   }
 
+  // Título limpio para el hero: si viene de "continuar viendo" una serie,
+  // el nombre guardado es "Serie — Episodio"; nos quedamos solo con la serie.
+  function heroTitle(item: MediaItem): string {
+    if (item.kind === 'series') return item.name.split(' — ')[0] || item.name;
+    return item.name;
+  }
+
+  function renderHero(watching: ProgressEntry[], fallback: MediaItem | undefined): HTMLElement | null {
+    const entry = watching[0];
+    const item = entry?.item ?? fallback;
+    if (!item) return null;
+
+    const playBtn = el('button', { class: 'btn focusable hero-btn', html: '▶ Reproducir' });
+    const infoBtn = el('button', {
+      class: 'btn-secondary btn focusable hero-btn',
+      html: 'ℹ Más info',
+    });
+
+    function doPlay(): void {
+      if (entry) resumeEntry(entry);
+      else openMedia(item!);
+    }
+    playBtn.addEventListener('click', doPlay);
+    infoBtn.addEventListener('click', () => {
+      if (item!.kind === 'series') void navigate(() => createDetailScreen(item!));
+      else doPlay();
+    });
+
+    const bg = item.icon
+      ? `background-image:linear-gradient(to right, var(--bg) 20%, rgba(39,39,39,0.55) 55%, rgba(39,39,39,0.1)), url('${item.icon}')`
+      : '';
+
+    return el('div', { class: 'hero', style: bg }, [
+      el('div', { class: 'hero-content' }, [
+        el('div', { class: 'hero-tag', html: entry ? 'Continuar viendo' : 'Destacado' }),
+        el('div', { class: 'hero-title', html: escapeHtml(heroTitle(item)) }),
+        el('div', { class: 'hero-actions' }, [playBtn, infoBtn]),
+      ]),
+    ]);
+  }
+
   async function renderHome(): Promise<void> {
     const watching = continueWatching(acctKey);
     const favs = listFavorites(acctKey);
@@ -82,10 +137,11 @@ export function createHomeScreen(): Screen {
     ]);
 
     content.innerHTML = '';
+    const hero = renderHero(watching, movies[0] ?? series[0] ?? live[0]);
+    if (hero) content.append(hero);
+
     if (watching.length) {
-      content.append(
-        rail('Continuar viendo', watching.map((e) => mediaCard(e.item, () => resumeEntry(e)))),
-      );
+      content.append(rail('Continuar viendo', watching.map((e) => continueCard(e, () => resumeEntry(e)))));
     }
     if (favs.length) {
       content.append(rail('Favoritos', favs.map((f) => mediaCard(f, () => openMedia(f)))));
@@ -170,28 +226,131 @@ export function createHomeScreen(): Screen {
     focusElement(input);
   }
 
+  function renderSettings(): void {
+    content.innerHTML = '';
+    const settings = loadParental();
+    const msg = el('div', { class: 'error-banner', html: '' });
+    msg.style.display = 'none';
+
+    function showMsg(text: string, ok = false): void {
+      msg.textContent = text;
+      msg.style.display = 'block';
+      msg.style.borderColor = ok ? 'var(--tint)' : 'var(--danger)';
+      msg.style.color = ok ? 'var(--tint)' : 'var(--danger)';
+    }
+
+    const statusRow = el('div', { class: 'settings-row' }, [
+      el('div', { class: 'settings-label', html: 'Contenido para adultos' }),
+      el('div', {
+        class: 'settings-value',
+        html: settings.adultEnabled ? 'Activado' : 'Desactivado (por defecto)',
+      }),
+    ]);
+
+    const toggleBtn = el('button', {
+      class: 'focusable btn',
+      html: settings.adultEnabled ? 'Desactivar' : 'Activar',
+    });
+
+    const pinInput = el('input', {
+      class: 'focusable',
+      type: 'password',
+      inputMode: 'numeric',
+      maxLength: 4,
+      placeholder: 'PIN (4 dígitos)',
+    });
+
+    toggleBtn.addEventListener('click', () => {
+      if (loadParental().adultEnabled) {
+        setAdultEnabled(false);
+        session.library.clearCache();
+        renderSettings();
+        return;
+      }
+      if (!setAdultEnabled(true, pinInput.value.trim())) {
+        showMsg('PIN incorrecto.');
+        return;
+      }
+      session.library.clearCache();
+      renderSettings();
+    });
+
+    const curPinInput = el('input', {
+      class: 'focusable',
+      type: 'password',
+      inputMode: 'numeric',
+      maxLength: 4,
+      placeholder: 'PIN actual',
+    });
+    const newPinInput = el('input', {
+      class: 'focusable',
+      type: 'password',
+      inputMode: 'numeric',
+      maxLength: 4,
+      placeholder: 'PIN nuevo (4 dígitos)',
+    });
+    const changePinBtn = el('button', { class: 'focusable btn', html: 'Cambiar PIN' });
+    changePinBtn.addEventListener('click', () => {
+      const np = newPinInput.value.trim();
+      if (!/^\d{4}$/.test(np)) {
+        showMsg('El PIN nuevo debe tener 4 dígitos.');
+        return;
+      }
+      if (!setPin(np, curPinInput.value.trim())) {
+        showMsg('PIN actual incorrecto.');
+        return;
+      }
+      curPinInput.value = '';
+      newPinInput.value = '';
+      showMsg('PIN actualizado.', true);
+    });
+
+    const rows: (HTMLElement | string)[] = [statusRow, msg];
+    if (!settings.adultEnabled) {
+      rows.push(el('div', { class: 'field' }, [el('label', { html: 'PIN para activar' }), pinInput]));
+    }
+    rows.push(
+      el('div', { class: 'field' }, [toggleBtn]),
+      el('div', { class: 'settings-divider' }),
+      el('div', { class: 'settings-label', html: 'Cambiar PIN (por defecto: 0000)' }),
+      el('div', { class: 'field' }, [curPinInput]),
+      el('div', { class: 'field' }, [newPinInput]),
+      el('div', { class: 'field' }, [changePinBtn]),
+    );
+
+    content.append(el('div', { class: 'settings-card' }, rows));
+    focusFirst(content);
+  }
+
   return {
     render(root) {
       const tabEls = TABS.map((t) => {
-        const tab = el('div', { class: 'tab focusable', html: t.label });
-        tab.dataset.tab = t.id;
-        tab.addEventListener('click', () => selectTab(t.id, tabEls));
-        return tab;
+        const item = el('div', {
+          class: 'side-item focusable',
+          html: `<span class="side-icon">${ICONS[t.id]}</span><span class="side-label">${t.label}</span>`,
+        });
+        item.dataset.tab = t.id;
+        item.addEventListener('click', () => selectTab(t.id, tabEls));
+        return item;
       });
-      const exitBtn = el('div', { class: 'tab focusable', html: 'Salir' });
+      const exitBtn = el('div', {
+        class: 'side-item side-exit focusable',
+        html: `<span class="side-icon">${ICONS.exit}</span><span class="side-label">Salir</span>`,
+      });
       exitBtn.addEventListener('click', () => {
         clearAccount();
         clearSession();
         void reset(createSetupScreen);
       });
 
-      const topbar = el('div', { class: 'topbar' }, [
-        el('div', { class: 'brand', html: 'MIRA<span class="dot">·</span>TV' }),
-        el('div', { class: 'tabs' }, [...tabEls, exitBtn]),
+      const sidebar = el('div', { class: 'sidebar' }, [
+        el('div', { class: 'side-brand', html: 'M' }),
+        el('div', { class: 'side-nav' }, tabEls),
+        exitBtn,
       ]);
 
-      content = el('div', { class: 'home-content' });
-      root.append(el('div', { class: 'screen' }, [topbar, content]));
+      content = el('div', { class: 'main-area' });
+      root.append(el('div', { class: 'home-screen' }, [sidebar, content]));
 
       tabEls.forEach((t) => t.classList.toggle('active', t.dataset.tab === activeTab));
       void renderContent().then(() => {

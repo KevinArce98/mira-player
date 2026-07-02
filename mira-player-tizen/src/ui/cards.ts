@@ -1,5 +1,6 @@
 import { el, poster } from './dom';
 import type { MediaItem } from '@/core/media';
+import type { ProgressEntry } from '@/core/progress';
 import { getSession } from '@/core/session';
 import { isFavorite, toggleFavorite } from '@/core/favorites';
 
@@ -21,6 +22,20 @@ export function mediaCard(item: MediaItem, onSelect: () => void): HTMLElement {
   ]);
   card.__item = item;
   card.__star = star;
+  card.addEventListener('click', onSelect);
+  return card;
+}
+
+// Tarjeta de "Continuar viendo": igual que mediaCard pero con barra de
+// progreso sobre el póster (posición guardada / duración total).
+export function continueCard(entry: ProgressEntry, onSelect: () => void): HTMLElement {
+  const pct =
+    entry.durationMs > 0 ? Math.min(100, Math.max(0, (entry.positionMs / entry.durationMs) * 100)) : 0;
+  const card = el('div', { class: 'card focusable' }, [
+    poster(entry.item.icon),
+    el('div', { class: 'card-progress' }, [el('div', { style: `width:${pct}%` })]),
+    el('div', { class: 'label', html: escapeHtml(entry.item.name) }),
+  ]);
   card.addEventListener('click', onSelect);
   return card;
 }

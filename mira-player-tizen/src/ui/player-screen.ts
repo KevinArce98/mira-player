@@ -1,6 +1,6 @@
 import { getPlayer } from '@/player/avplay';
 import { Key } from '@/core/keys';
-import { back } from '@/core/router';
+import { back, replace } from '@/core/router';
 import type { Screen } from '@/core/router';
 import { getSession } from '@/core/session';
 import { saveProgress } from '@/core/progress';
@@ -48,6 +48,53 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     if (r.kind === 'live') return client.liveStreamUrl(r.streamId);
     if (r.kind === 'movie') return client.movieStreamUrl(r.streamId, r.ext);
     return client.seriesStreamUrl(r.episodeId, r.ext);
+  }
+
+  // Reproducción continua: al terminar un episodio de serie, busca el
+  // siguiente (misma temporada o la próxima) y lo reproduce automáticamente.
+  async function playNextEpisode(): Promise<void> {
+    const r = opts.resume;
+    if (r.kind !== 'series') {
+      void back();
+      return;
+    }
+    try {
+      const info = await client.seriesInfo(r.seriesId);
+      const seasons = Object.keys(info.episodes).sort((a, b) => Number(a) - Number(b));
+      const seriesName = info.info.name || opts.title.split(' — ')[0] || opts.title;
+
+      for (let si = 0; si < seasons.length; si++) {
+        const eps = info.episodes[seasons[si]] ?? [];
+        const idx = eps.findIndex((e) => e.id === r.episodeId);
+        if (idx < 0) continue;
+
+        let nextEp = eps[idx + 1];
+        let nextSeasonIdx = si;
+        while (!nextEp && ++nextSeasonIdx < seasons.length) {
+          nextEp = (info.episodes[seasons[nextSeasonIdx]] ?? [])[0];
+        }
+
+        if (!nextEp) {
+          void back();
+          return;
+        }
+
+        const title = `${seriesName} — ${nextEp.title}`;
+        const nextResume: ResumePayload = {
+          kind: 'series',
+          episodeId: nextEp.id,
+          ext: nextEp.container_extension || 'mp4',
+          seriesId: r.seriesId,
+          title,
+        };
+        const media: MediaItem = { kind: 'series', id: r.seriesId, name: title, icon: opts.media.icon };
+        await replace(() => createPlayerScreen({ title, media, resume: nextResume }));
+        return;
+      }
+      void back();
+    } catch {
+      void back();
+    }
   }
 
   async function loadEpg(): Promise<void> {
@@ -111,7 +158,11 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
         },
         onEnd: () => {
           persist();
-          void back();
+          if (opts.resume.kind === 'series') {
+            void playNextEpisode();
+          } else {
+            void back();
+          }
         },
         onError: (msg) => {
           spinner.style.display = 'none';
