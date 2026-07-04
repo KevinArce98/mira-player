@@ -4,8 +4,12 @@
     <field id="credentials" type="assocarray" />
     <field id="streamUrl" type="string" value="" />
     <field id="contentTitle" type="string" value="" />
+    <field id="posterUrl" type="string" value="" />
+    <field id="episodeQueue" type="array" />
+    <field id="episodeIndex" type="integer" value="-1" />
     <field id="navigate" type="assocarray" alwaysNotify="true" />
   </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
   <script type="text/brightscript" uri="pkg:/source/utils.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/PlayerScreen.brs" />
   <children>
@@ -19,6 +23,18 @@
       <Label id="liveLabel" text="EN VIVO" translation="[50, 75]" color="0xFF4444FF" font="font:SmallBoldSystemFont" visible="false" />
       <Rectangle width="1280" height="6" color="0x333333FF" translation="[0, 104]" />
       <Rectangle id="progressBar" width="4" height="6" color="0xD4AA7DFF" translation="[0, 104]" />
+    </Group>
+    <Group id="nextOverlay" visible="false">
+      <Rectangle width="1280" height="720" color="0x000000E0" />
+      <Label text="SIGUIENTE EPISODIO" translation="[0, 240]" width="1280" horizAlign="center" color="0x999999FF" font="font:SmallBoldSystemFont" />
+      <Label id="nextTitle" text="" translation="[0, 280]" width="1280" horizAlign="center" color="0xFFFFFFFF" font="font:LargeBoldSystemFont" />
+      <Label id="nextCountdown" text="" translation="[0, 335]" width="1280" horizAlign="center" color="0xD4AA7DFF" font="font:MediumSystemFont" />
+      <Rectangle id="nextPlayBtn" width="260" height="56" color="0xD4AA7DFF" translation="[360, 400]">
+        <Label text="Reproducir ahora" width="260" height="56" horizAlign="center" vertAlign="center" color="0x272727FF" font="font:SmallBoldSystemFont" />
+      </Rectangle>
+      <Rectangle id="nextCancelBtn" width="260" height="56" color="0x2A2A2AFF" translation="[660, 400]">
+        <Label text="Cancelar" width="260" height="56" horizAlign="center" vertAlign="center" color="0xFFFFFFFF" font="font:SmallBoldSystemFont" />
+      </Rectangle>
     </Group>
   </children>
 </component>

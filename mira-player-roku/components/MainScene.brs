@@ -16,6 +16,9 @@ sub pushScreen(screenName as String, params as Object)
     if params.DoesExist("contentTitle") then screen.contentTitle = params.contentTitle
     if params.DoesExist("credentials") then screen.credentials = params.credentials
     if params.DoesExist("contentData") then screen.contentData = params.contentData
+    if params.DoesExist("posterUrl") then screen.posterUrl = params.posterUrl
+    if params.DoesExist("episodeQueue") then screen.episodeQueue = params.episodeQueue
+    if params.DoesExist("episodeIndex") then screen.episodeIndex = params.episodeIndex
     if params.DoesExist("streamUrl") then screen.streamUrl = params.streamUrl
 
     m.top.AppendChild(screen)

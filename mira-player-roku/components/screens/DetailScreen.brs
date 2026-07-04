@@ -172,12 +172,43 @@ sub onEpisodeSelected(event as Object)
     ext = SafeStr(ep["container_extension"])
     url = SeriesStreamUrl(creds.server, creds.username, creds.password, episodeId, ext)
     title = m.top.contentData["name"] + " - Ep. " + SafeStr(ep["episode_num"])
+    queue = buildEpisodeQueue(m.currentSeasonIdx, idx)
     m.wentToPlayer = true
     m.top.navigate = {
         screen: "PlayerScreen",
-        params: {streamUrl: url, contentTitle: title, credentials: creds}
+        params: {
+            streamUrl: url,
+            contentTitle: title,
+            credentials: creds,
+            posterUrl: m.poster.uri,
+            episodeQueue: queue,
+            episodeIndex: 0
+        }
     }
 end sub
+
+function buildEpisodeQueue(startSeasonIdx as Integer, startEpIdx as Integer) as Object
+    queue = []
+    creds = m.top.credentials
+    seriesName = SafeStr(m.top.contentData["name"])
+    si = startSeasonIdx
+    while si < m.seasonKeys.Count()
+        epList = m.seasons[m.seasonKeys[si]]
+        ei = 0
+        if si = startSeasonIdx then ei = startEpIdx
+        while ei < epList.Count()
+            ep = epList[ei]
+            episodeId = SafeStr(ep["id"])
+            ext = SafeStr(ep["container_extension"])
+            url = SeriesStreamUrl(creds.server, creds.username, creds.password, episodeId, ext)
+            title = seriesName + " - Ep. " + SafeStr(ep["episode_num"])
+            queue.Push({title: title, url: url})
+            ei = ei + 1
+        end while
+        si = si + 1
+    end while
+    return queue
+end function
 
 sub updateFocus()
     m.playBtn.color = "0x2A2A2AFF"
@@ -266,7 +297,7 @@ sub playContent()
     m.wentToPlayer = true
     m.top.navigate = {
         screen: "PlayerScreen",
-        params: {streamUrl: url, contentTitle: SafeStr(item["name"]), credentials: creds}
+        params: {streamUrl: url, contentTitle: SafeStr(item["name"]), credentials: creds, posterUrl: m.poster.uri}
     }
 end sub
 

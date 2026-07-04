@@ -20,15 +20,23 @@
     <Label id="expiryInfo" text="" translation="[50, 212]" color="0xCCCCCCFF" />
     <Label id="statusInfo" text="" translation="[50, 244]" color="0xCCCCCCFF" />
 
-    <!-- Actions -->
-    <Label text="Acciones" translation="[50, 300]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
-    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 324]" />
+    <!-- Parental controls -->
+    <Label text="Control parental" translation="[50, 284]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
+    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 308]" />
+    <Label text="Bloquea categorías de contenido para adultos con un PIN." translation="[50, 318]" color="0x999999FF" font="font:SmallSystemFont" />
+    <Rectangle id="parentalBtn" width="360" height="54" color="0x2A2A2AFF" translation="[50, 344]">
+      <Label id="parentalBtnLabel" text="Control parental: Desactivado" color="0xFFFFFFFF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
+    </Rectangle>
 
-    <Rectangle id="logoutBtn" width="300" height="54" color="0x2A2A2AFF" translation="[50, 338]">
+    <!-- Actions -->
+    <Label text="Acciones" translation="[50, 424]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
+    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 448]" />
+
+    <Rectangle id="logoutBtn" width="300" height="54" color="0x2A2A2AFF" translation="[50, 462]">
       <Label text="Cerrar sesión" color="0xFF5555FF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
     </Rectangle>
 
     <BusySpinner id="spinner" translation="[620, 350]" visible="true" />
-    <Label id="stateLabel" text="Cargando información de cuenta…" color="0x999999FF" translation="[50, 450]" />
+    <Label id="stateLabel" text="Cargando información de cuenta…" color="0x999999FF" translation="[50, 560]" />
   </children>
 </component>

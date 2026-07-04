@@ -4,15 +4,20 @@ sub init()
     m.expiryInfo = m.top.FindNode("expiryInfo")
     m.statusInfo = m.top.FindNode("statusInfo")
     m.logoutBtn = m.top.FindNode("logoutBtn")
+    m.parentalBtn = m.top.FindNode("parentalBtn")
+    m.parentalBtnLabel = m.top.FindNode("parentalBtnLabel")
     m.spinner = m.top.FindNode("spinner")
     m.stateLabel = m.top.FindNode("stateLabel")
 
     m.focusIndex = 0
+    m.pendingPin = ""
+    m.parentalFlow = ""
 
     m.task = CreateObject("roSGNode", "XtreamTask")
     m.task.ObserveField("response", "onAccountInfo")
 
     updateFocus()
+    updateParentalLabel()
     loadAccount()
 end sub
 
@@ -66,7 +71,14 @@ sub onAccountInfo()
 end sub
 
 sub updateFocus()
-    m.logoutBtn.color = iif(m.focusIndex = 0, "0x3A1A1AFF", "0x2A2A2AFF")
+    m.parentalBtn.color = iif(m.focusIndex = 0, "0x3A2E1AFF", "0x2A2A2AFF")
+    m.logoutBtn.color = iif(m.focusIndex = 1, "0x3A1A1AFF", "0x2A2A2AFF")
+end sub
+
+sub updateParentalLabel()
+    enabled = IsParentalEnabled()
+    m.parentalBtnLabel.text = iif(enabled, "Control parental: Activado", "Control parental: Desactivado")
+    m.parentalBtnLabel.color = iif(enabled, "0xD4AA7DFF", "0xFFFFFFFF")
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
@@ -77,13 +89,110 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         return true
     end if
 
-    if key = "OK" and m.focusIndex = 0
-        confirmLogout()
+    if key = "up"
+        if m.focusIndex > 0
+            m.focusIndex = m.focusIndex - 1
+            updateFocus()
+        end if
+        return true
+    end if
+
+    if key = "down"
+        if m.focusIndex < 1
+            m.focusIndex = m.focusIndex + 1
+            updateFocus()
+        end if
+        return true
+    end if
+
+    if key = "OK"
+        if m.focusIndex = 0
+            toggleParental()
+        else if m.focusIndex = 1
+            confirmLogout()
+        end if
         return true
     end if
 
     return false
 end function
+
+sub toggleParental()
+    if IsParentalEnabled()
+        m.parentalFlow = "disable"
+        showPinDialog("Introduce el PIN para desactivar")
+    else
+        m.parentalFlow = "create"
+        m.pendingPin = ""
+        showPinDialog("Crea un PIN de 4 dígitos")
+    end if
+end sub
+
+sub showPinDialog(title as String)
+    dlg = CreateObject("roSGNode", "StandardKeyboardDialog")
+    dlg.title = title
+    dlg.buttons = ["Aceptar", "Cancelar"]
+    dlg.textEditBox.text = ""
+    dlg.textEditBox.hintText = "PIN"
+    dlg.textEditBox.secureMode = true
+    dlg.textEditBox.maxTextLength = 4
+    dlg.ObserveField("buttonSelected", "onPinDialogButton")
+    m.pinDlg = dlg
+    m.top.GetScene().Dialog = dlg
+end sub
+
+sub onPinDialogButton()
+    dlg = m.pinDlg
+    btn = dlg.buttonSelected
+    scene = m.top.GetScene()
+    if scene <> invalid then scene.Dialog = invalid
+    m.pinDlg = invalid
+
+    if btn <> 0
+        m.parentalFlow = ""
+        return
+    end if
+
+    pin = dlg.textEditBox.text
+
+    if m.parentalFlow = "create"
+        if len(pin) <> 4
+            showPinDialog("PIN inválido. Debe tener 4 dígitos")
+            return
+        end if
+        m.pendingPin = pin
+        m.parentalFlow = "confirm"
+        showPinDialog("Confirma el PIN")
+    else if m.parentalFlow = "confirm"
+        if pin <> m.pendingPin
+            m.pendingPin = ""
+            m.parentalFlow = "create"
+            showPinDialog("Los PIN no coinciden. Crea un PIN de 4 dígitos")
+            return
+        end if
+        SaveParentalPin(pin)
+        SetParentalEnabled(true)
+        m.parentalFlow = ""
+        updateParentalLabel()
+    else if m.parentalFlow = "disable"
+        if VerifyParentalPin(pin)
+            SetParentalEnabled(false)
+            m.parentalFlow = ""
+            updateParentalLabel()
+        else
+            m.parentalFlow = ""
+            showPinError()
+        end if
+    end if
+end sub
+
+sub showPinError()
+    dlg = CreateObject("roSGNode", "StandardMessageDialog")
+    dlg.title = "PIN incorrecto"
+    dlg.message = "El PIN no es correcto."
+    dlg.buttons = ["Cerrar"]
+    m.top.GetScene().Dialog = dlg
+end sub
 
 sub confirmLogout()
     dlg = CreateObject("roSGNode", "StandardMessageDialog")

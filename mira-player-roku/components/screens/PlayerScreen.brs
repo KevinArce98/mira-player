@@ -7,6 +7,12 @@ sub init()
     m.liveLabel = m.top.FindNode("liveLabel")
     m.progressBar = m.top.FindNode("progressBar")
 
+    m.nextOverlay = m.top.FindNode("nextOverlay")
+    m.nextTitle = m.top.FindNode("nextTitle")
+    m.nextCountdownLabel = m.top.FindNode("nextCountdown")
+    m.nextPlayBtn = m.top.FindNode("nextPlayBtn")
+    m.nextCancelBtn = m.top.FindNode("nextCancelBtn")
+
     m.video = m.top.CreateChild("Video")
     m.video.width = 1280
     m.video.height = 720
@@ -30,12 +36,20 @@ sub init()
     m.bufferTimer.repeat = false
     m.bufferTimer.ObserveField("fire", "onBufferTimeout")
 
+    m.nextTimer = m.top.CreateChild("Timer")
+    m.nextTimer.duration = 1
+    m.nextTimer.repeat = true
+    m.nextTimer.ObserveField("fire", "onNextTick")
+
     m.osdVisible = false
     m.isLive = false
     m.didPlay = false
     m.didResume = false
     m.totalDuration = 0.0
     m.retryCount = 0
+    m.nextCountdown = 0
+    m.nextFocus = 0
+    m.nextVisible = false
 
     m.top.ObserveField("streamUrl", "onUrlSet")
 end sub
@@ -43,6 +57,11 @@ end sub
 sub onUrlSet()
     url = m.top.streamUrl
     if url = "" then return
+
+    hideNextOverlay()
+    m.didResume = false
+    m.retryCount = 0
+    m.totalDuration = 0.0
 
     m.osdTitle.text = CleanText(m.top.contentTitle)
     m.isLive = (instr(url, "/live/") > 0)
@@ -121,9 +140,71 @@ sub onVideoState()
         end if
         if m.didPlay
             progressClear()
+            RemoveContinueEntry(progressKey())
+            if hasNextEpisode()
+                showNextOverlay()
+                return
+            end if
             m.top.navigate = {screen: "back", params: {}}
         end if
     end if
+end sub
+
+function hasNextEpisode() as Boolean
+    queue = m.top.episodeQueue
+    idx = m.top.episodeIndex
+    if queue = invalid or idx < 0 then return false
+    return idx + 1 < queue.Count()
+end function
+
+sub showNextOverlay()
+    queue = m.top.episodeQueue
+    nextEp = queue[m.top.episodeIndex + 1]
+    m.nextTitle.text = CleanText(SafeStr(nextEp["title"]))
+    m.nextCountdown = 10
+    m.nextFocus = 0
+    updateNextOverlay()
+    m.nextOverlay.visible = true
+    m.nextVisible = true
+    hideOsd()
+    m.nextTimer.control = "start"
+    m.top.SetFocus(true)
+end sub
+
+sub updateNextOverlay()
+    m.nextCountdownLabel.text = "Se reproducirá en " + m.nextCountdown.ToStr() + " s"
+    m.nextPlayBtn.color = iif(m.nextFocus = 0, "0xD4AA7DFF", "0x2A2A2AFF")
+    m.nextCancelBtn.color = iif(m.nextFocus = 1, "0xD4AA7DFF", "0x2A2A2AFF")
+    playLabel = m.nextPlayBtn.GetChild(0)
+    if playLabel <> invalid then playLabel.color = iif(m.nextFocus = 0, "0x272727FF", "0xFFFFFFFF")
+    cancelLabel = m.nextCancelBtn.GetChild(0)
+    if cancelLabel <> invalid then cancelLabel.color = iif(m.nextFocus = 1, "0x272727FF", "0xFFFFFFFF")
+end sub
+
+sub onNextTick()
+    if not m.nextVisible then return
+    m.nextCountdown = m.nextCountdown - 1
+    if m.nextCountdown <= 0
+        playNextEpisode()
+        return
+    end if
+    updateNextOverlay()
+end sub
+
+sub hideNextOverlay()
+    m.nextTimer.control = "stop"
+    m.nextOverlay.visible = false
+    m.nextVisible = false
+end sub
+
+sub playNextEpisode()
+    hideNextOverlay()
+    if not hasNextEpisode() then return
+    nextIdx = m.top.episodeIndex + 1
+    nextEp = m.top.episodeQueue[nextIdx]
+    m.top.episodeIndex = nextIdx
+    m.top.contentTitle = SafeStr(nextEp["title"])
+    m.top.streamUrl = SafeStr(nextEp["url"])
 end sub
 
 sub onBufferTimeout()
@@ -156,6 +237,12 @@ sub progressSave()
     sec = CreateObject("roRegistrySection", "progress")
     sec.Write(key, Str(posVal))
     sec.Flush()
+    SaveContinueEntry({
+        key: key,
+        title: m.top.contentTitle,
+        url: m.top.streamUrl,
+        icon: m.top.posterUrl
+    })
 end sub
 
 function progressLoad() as Float
@@ -217,6 +304,34 @@ end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
+
+    if m.nextVisible
+        if key = "left"
+            m.nextFocus = 0
+            updateNextOverlay()
+            return true
+        end if
+        if key = "right"
+            m.nextFocus = 1
+            updateNextOverlay()
+            return true
+        end if
+        if key = "OK"
+            if m.nextFocus = 0
+                playNextEpisode()
+            else
+                hideNextOverlay()
+                m.top.navigate = {screen: "back", params: {}}
+            end if
+            return true
+        end if
+        if key = "back"
+            hideNextOverlay()
+            m.top.navigate = {screen: "back", params: {}}
+            return true
+        end if
+        return true
+    end if
 
     if key = "back"
         if not m.isLive and m.didPlay

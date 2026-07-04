@@ -30,6 +30,8 @@ end sub
 sub onCredentialsSet()
     if m.top.credentials = invalid then return
     m.task.credentials = m.top.credentials
+    saved = LoadBrowseState("live")
+    m.savedCategoryId = saved.category
     m.pendingAction = "categories"
     m.task.request = {action: "get_live_categories"}
 end sub
@@ -53,11 +55,39 @@ sub onResponse()
 end sub
 
 sub buildCategoryList(data as Object)
-    m.categories = [{category_id: "", category_name: "Todos"}]
+    visibleCats = []
     for each cat in data
+        if not BlockedByParental(SafeStr(cat["category_name"]))
+            visibleCats.Push(cat)
+        end if
+    end for
+    visibleCats = ApplyCategoryOrder(visibleCats, LoadCategoryOrder("live"))
+
+    m.categories = [{category_id: "", category_name: "Todos"}]
+    for each cat in visibleCats
         m.categories.Push(cat)
     end for
 
+    renderCategoryList()
+    m.categoryList.SetFocus(true)
+
+    restoreIdx = 0
+    if m.savedCategoryId <> invalid and m.savedCategoryId <> ""
+        i = 0
+        for each cat in m.categories
+            if SafeStr(cat["category_id"]) = m.savedCategoryId then restoreIdx = i
+            i = i + 1
+        end for
+    end if
+
+    if restoreIdx > 0
+        m.categoryList.jumpToItem = restoreIdx
+    else
+        loadChannels("")
+    end if
+end sub
+
+sub renderCategoryList()
     content = CreateObject("roSGNode", "ContentNode")
     for each cat in m.categories
         row = CreateObject("roSGNode", "ContentNode")
@@ -65,9 +95,30 @@ sub buildCategoryList(data as Object)
         content.AppendChild(row)
     end for
     m.categoryList.content = content
-    m.categoryList.SetFocus(true)
+end sub
 
-    loadChannels("")
+sub moveCategory(direction as Integer)
+    if m.panelFocus <> "categories" then return
+    idx = m.categoryList.itemFocused
+    if idx <= 0 then return
+    target = idx + direction
+    if target <= 0 or target >= m.categories.Count() then return
+
+    tmp = m.categories[idx]
+    m.categories[idx] = m.categories[target]
+    m.categories[target] = tmp
+
+    ids = []
+    i = 1
+    while i < m.categories.Count()
+        ids.Push(SafeStr(m.categories[i]["category_id"]))
+        i = i + 1
+    end while
+    SaveCategoryOrder("live", ids)
+
+    renderCategoryList()
+    m.categoryList.jumpToItem = target
+    m.categoryList.SetFocus(true)
 end sub
 
 sub loadChannels(categoryId as String)
@@ -107,6 +158,7 @@ sub onCategoryFocused(event as Object)
     categoryId = SafeStr(cat["category_id"])
     if categoryId <> m.currentCategoryId
         loadChannels(categoryId)
+        SaveBrowseState("live", categoryId, "")
     end if
 end sub
 
@@ -138,6 +190,16 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             return true
         end if
         m.top.navigate = {screen: "back", params: {}}
+        return true
+    end if
+
+    if key = "rewind"
+        moveCategory(-1)
+        return true
+    end if
+
+    if key = "fastForward"
+        moveCategory(1)
         return true
     end if
 

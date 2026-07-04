@@ -16,7 +16,7 @@
     <Rectangle width="1280" height="70" color="0x111111FF" />
     <Label id="headerTitle" text="Películas" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
     <Label id="sortLabel" text="" translation="[1220, 25]" color="0xD4AA7DFF" font="font:SmallSystemFont" horizAlign="right" />
-    <Label text="Verde: Buscar   *: Ordenar" translation="[880, 25]" color="0x555555FF" font="font:SmallSystemFont" />
+    <Label text="Verde: Buscar   *: Ordenar   &#171;/&#187;: Mover categoría" translation="[700, 25]" color="0x555555FF" font="font:SmallSystemFont" />
 
     <!-- Category list (top bar) -->
     <LabelList

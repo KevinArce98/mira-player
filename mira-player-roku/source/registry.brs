@@ -20,6 +20,9 @@ function ClearCredentials() as Void
     reg.DeleteSection("credentials")
     reg.DeleteSection("favorites")
     reg.DeleteSection("progress")
+    reg.DeleteSection("browse")
+    reg.DeleteSection("parental")
+    reg.DeleteSection("continuar")
     reg.Flush()
 end function
 
@@ -84,4 +87,144 @@ function ToggleFavorite(id as String, contentType as String, item as Object) as 
     end if
     SaveFavorites(newFavs)
     return not found
+end function
+
+function SaveBrowseState(tipo as String, categoryId as String, sortMode as String) as Void
+    sec = CreateObject("roRegistrySection", "browse")
+    sec.Write("cat_" + tipo, categoryId)
+    sec.Write("sort_" + tipo, sortMode)
+    sec.Flush()
+end function
+
+function LoadBrowseState(tipo as String) as Object
+    sec = CreateObject("roRegistrySection", "browse")
+    return {category: sec.Read("cat_" + tipo), sort: sec.Read("sort_" + tipo)}
+end function
+
+function LoadCategoryOrder(tipo as String) as Object
+    sec = CreateObject("roRegistrySection", "browse")
+    json = sec.Read("order_" + tipo)
+    if json = "" then return []
+    parsed = ParseJSON(json)
+    if parsed = invalid then return []
+    return parsed
+end function
+
+function SaveCategoryOrder(tipo as String, ids as Object) as Void
+    sec = CreateObject("roRegistrySection", "browse")
+    sec.Write("order_" + tipo, FormatJSON(ids))
+    sec.Flush()
+end function
+
+function ApplyCategoryOrder(categories as Object, orderIds as Object) as Object
+    if orderIds.Count() = 0 then return categories
+    ordered = []
+    rest = []
+    byId = {}
+    for each cat in categories
+        byId[SafeStr(cat["category_id"])] = cat
+    end for
+    used = {}
+    for each id in orderIds
+        key = SafeStr(id)
+        if byId.DoesExist(key)
+            ordered.Push(byId[key])
+            used[key] = true
+        end if
+    end for
+    for each cat in categories
+        key = SafeStr(cat["category_id"])
+        if not used.DoesExist(key)
+            rest.Push(cat)
+        end if
+    end for
+    for each cat in rest
+        ordered.Push(cat)
+    end for
+    return ordered
+end function
+
+function IsParentalEnabled() as Boolean
+    sec = CreateObject("roRegistrySection", "parental")
+    return sec.Read("enabled") = "1"
+end function
+
+function SetParentalEnabled(enabled as Boolean) as Void
+    sec = CreateObject("roRegistrySection", "parental")
+    sec.Write("enabled", iif(enabled, "1", ""))
+    sec.Flush()
+end function
+
+function HashParentalPin(pin as String, salt as String) as String
+    digest = CreateObject("roEVPDigest")
+    digest.Setup("sha256")
+    ba = CreateObject("roByteArray")
+    ba.FromAsciiString(salt + ":" + pin)
+    return digest.Process(ba)
+end function
+
+function SaveParentalPin(pin as String) as Void
+    di = CreateObject("roDeviceInfo")
+    salt = di.GetRandomUUID()
+    sec = CreateObject("roRegistrySection", "parental")
+    sec.Write("salt", salt)
+    sec.Write("pin_hash", HashParentalPin(pin, salt))
+    sec.Flush()
+end function
+
+function VerifyParentalPin(pin as String) as Boolean
+    sec = CreateObject("roRegistrySection", "parental")
+    salt = sec.Read("salt")
+    stored = sec.Read("pin_hash")
+    if salt = "" or stored = "" then return false
+    return HashParentalPin(pin, salt) = stored
+end function
+
+function IsAdultCategoryName(name as String) as Boolean
+    lower = lcase(name)
+    keywords = ["adult", "xxx", "porn", "eroti", "18+", "+18"]
+    for each kw in keywords
+        if instr(lower, kw) > 0 then return true
+    end for
+    return false
+end function
+
+function BlockedByParental(categoryName as String) as Boolean
+    if not IsParentalEnabled() then return false
+    return IsAdultCategoryName(categoryName)
+end function
+
+function LoadContinueList() as Object
+    sec = CreateObject("roRegistrySection", "continuar")
+    json = sec.Read("items")
+    if json = "" then return []
+    parsed = ParseJSON(json)
+    if parsed = invalid then return []
+    return parsed
+end function
+
+function SaveContinueEntry(entry as Object) as Void
+    items = LoadContinueList()
+    newItems = [entry]
+    for each item in items
+        if SafeStr(item["key"]) <> SafeStr(entry["key"]) and newItems.Count() < 10
+            newItems.Push(item)
+        end if
+    end for
+    sec = CreateObject("roRegistrySection", "continuar")
+    sec.Write("items", FormatJSON(newItems))
+    sec.Flush()
+end function
+
+function RemoveContinueEntry(key as String) as Void
+    items = LoadContinueList()
+    newItems = []
+    for each item in items
+        if SafeStr(item["key"]) <> key
+            newItems.Push(item)
+        end if
+    end for
+    sec = CreateObject("roRegistrySection", "continuar")
+    sec.Write("items", FormatJSON(newItems))
+    sec.Flush()
 end function

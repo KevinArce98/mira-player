@@ -13,7 +13,7 @@
     <!-- Header -->
     <Rectangle width="1280" height="70" color="0x111111FF" />
     <Label text="TV en vivo" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
-    <Label text="← Atrás" translation="[1150, 25]" color="0x999999FF" />
+    <Label text="&#171;/&#187;: Mover categoría" translation="[980, 25]" color="0x555555FF" font="font:SmallSystemFont" />
 
     <!-- Category list (left panel) -->
     <Rectangle width="280" height="650" color="0x111111FF" translation="[0, 70]" />

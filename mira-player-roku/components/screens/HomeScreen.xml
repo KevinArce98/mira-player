@@ -32,10 +32,25 @@
     <!-- Content header -->
     <Label id="contentTitle" text="Inicio" translation="[290, 36]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
 
-    <!-- Favorites grid -->
+    <!-- Continue watching -->
+    <Label id="continueLabel" text="Continuar viendo" translation="[290, 90]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" visible="false" />
+    <Label text="*: Quitar" translation="[1180, 92]" font="font:SmallSystemFont" color="0x555555FF" visible="false" id="continueHint" />
+    <PosterGrid
+      id="continueGrid"
+      translation="[280, 120]"
+      numColumns="5"
+      numRows="1"
+      itemSize="[180, 130]"
+      itemSpacing="[10, 10]"
+      posterDisplayMode="scaleToZoom"
+      visible="false"
+    />
+
+    <!-- Favorites -->
+    <Label id="favLabel" text="Favoritos" translation="[290, 300]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" visible="false" />
     <PosterGrid
       id="favGrid"
-      translation="[280, 90]"
+      translation="[280, 330]"
       numColumns="5"
       itemSize="[180, 200]"
       itemSpacing="[10, 10]"

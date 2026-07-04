@@ -63,6 +63,11 @@ sub setupForType()
     m.stateLabel.visible = true
     m.spinner.visible = true
 
+    saved = LoadBrowseState(tipo)
+    if saved.sort <> "" then m.sortMode = saved.sort
+    m.savedCategoryId = saved.category
+    updateSortLabel()
+
     if tipo = "movie"
         m.pendingAction = "categories"
         m.catAction = "get_vod_categories"
@@ -95,11 +100,39 @@ sub onResponse()
 end sub
 
 sub buildCategoryList(data as Object)
-    m.categories = [{category_id: "", category_name: "Todas"}]
+    visibleCats = []
     for each cat in data
+        if not BlockedByParental(SafeStr(cat["category_name"]))
+            visibleCats.Push(cat)
+        end if
+    end for
+    visibleCats = ApplyCategoryOrder(visibleCats, LoadCategoryOrder(m.top.contentType))
+
+    m.categories = [{category_id: "", category_name: "Todas"}]
+    for each cat in visibleCats
         m.categories.Push(cat)
     end for
 
+    renderCategoryList()
+    m.categoryList.SetFocus(true)
+
+    restoreIdx = 0
+    if m.savedCategoryId <> invalid and m.savedCategoryId <> ""
+        i = 0
+        for each cat in m.categories
+            if SafeStr(cat["category_id"]) = m.savedCategoryId then restoreIdx = i
+            i = i + 1
+        end for
+    end if
+
+    if restoreIdx > 0
+        m.categoryList.jumpToItem = restoreIdx
+    else
+        loadItems("")
+    end if
+end sub
+
+sub renderCategoryList()
     content = CreateObject("roSGNode", "ContentNode")
     for each cat in m.categories
         row = CreateObject("roSGNode", "ContentNode")
@@ -107,9 +140,6 @@ sub buildCategoryList(data as Object)
         content.AppendChild(row)
     end for
     m.categoryList.content = content
-    m.categoryList.SetFocus(true)
-
-    loadItems("")
 end sub
 
 sub loadItems(categoryId as String)
@@ -212,7 +242,32 @@ sub onCategoryFocused(event as Object)
     categoryId = SafeStr(cat["category_id"])
     if categoryId <> m.currentCategoryId
         loadItems(categoryId)
+        SaveBrowseState(m.top.contentType, categoryId, m.sortMode)
     end if
+end sub
+
+sub moveCategory(direction as Integer)
+    if m.panelFocus <> "categories" then return
+    idx = m.categoryList.itemFocused
+    if idx <= 0 then return
+    target = idx + direction
+    if target <= 0 or target >= m.categories.Count() then return
+
+    tmp = m.categories[idx]
+    m.categories[idx] = m.categories[target]
+    m.categories[target] = tmp
+
+    ids = []
+    i = 1
+    while i < m.categories.Count()
+        ids.Push(SafeStr(m.categories[i]["category_id"]))
+        i = i + 1
+    end while
+    SaveCategoryOrder(m.top.contentType, ids)
+
+    renderCategoryList()
+    m.categoryList.jumpToItem = target
+    m.categoryList.SetFocus(true)
 end sub
 
 sub onCategorySelected(event as Object)
@@ -279,6 +334,7 @@ sub toggleSort()
         m.sortMode = "default"
     end if
     updateSortLabel()
+    SaveBrowseState(m.top.contentType, m.currentCategoryId, m.sortMode)
     applyFilterAndSort()
 end sub
 
@@ -288,7 +344,7 @@ sub updateSortLabel()
     else if m.sortMode = "za"
         m.sortLabel.text = "Z-A"
     else
-        m.sortLabel.text = ""
+        m.sortLabel.text = "Por defecto"
     end if
 end sub
 
@@ -353,6 +409,16 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
 
     if key = "options"
         toggleSort()
+        return true
+    end if
+
+    if key = "rewind"
+        moveCategory(-1)
+        return true
+    end if
+
+    if key = "fastForward"
+        moveCategory(1)
         return true
     end if
 
