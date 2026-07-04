@@ -150,7 +150,7 @@ export default function SetupScreen() {
                 {t('setup.legalCheckbox')}
                 <Text
                   style={{ color: theme.accent, fontFamily: Fonts.semibold }}
-                  onPress={() => Linking.openURL('https://kevinarce98.github.io/mira-tv-mobile/terms/')}>
+                  onPress={() => Linking.openURL('https://kevinarce98.github.io/mira-player/terms/')}>
                   {t('setup.legalTermsLink')}
                 </Text>
               </Text>

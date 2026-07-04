@@ -180,7 +180,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         <Pressable
-          onPress={() => Linking.openURL('https://kevinarce98.github.io/mira-tv-mobile/terms/')}
+          onPress={() => Linking.openURL('https://kevinarce98.github.io/mira-player/terms/')}
           style={[styles.button, styles.outline, { borderColor: theme.border }]}>
           <Ionicons name="document-text-outline" size={18} color={theme.textSecondary} />
           <ThemedText type="small" themeColor="textSecondary" style={styles.buttonText}>
