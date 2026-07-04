@@ -5,11 +5,19 @@ import { ContentGrid } from '@/components/media/content-grid';
 import { CatalogToolbar } from '@/components/ui/catalog-toolbar';
 import { Empty, Loading } from '@/components/ui/empty';
 import { useAccount } from '@/hooks/data/use-account';
-import { useCatalog, useCatalogCount, useCategories } from '@/hooks/data/use-catalog';
+import {
+  applyCategoryOrder,
+  useCatalog,
+  useCatalogCount,
+  useCategories,
+  useCategoryOrder,
+  useSortPreference,
+} from '@/hooks/data/use-catalog';
 import { useDebounced } from '@/hooks/use-debounced';
 import { useT } from '@/providers/preferences';
+import { getCatalogBrowseState, setCatalogBrowseState } from '@/stores/browse';
 import type { TranslationKey } from '@/lib/i18n';
-import type { ContentSort, ContentType } from '@/types/models';
+import type { ContentType } from '@/types/models';
 
 export function CatalogPage({
   tipo,
@@ -25,12 +33,13 @@ export function CatalogPage({
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [categoriaId, setCategoriaId] = useState<string | undefined>(
-    () => searchParams.get('cat') ?? undefined,
+    () => searchParams.get('cat') ?? getCatalogBrowseState(tipo).categoriaId,
   );
-  const [term, setTerm] = useState(() => searchParams.get('q') ?? '');
-  const [sort, setSort] = useState<ContentSort>(
-    () => (searchParams.get('s') as ContentSort) ?? 'nombre_asc',
+  const [term, setTerm] = useState(
+    () => searchParams.get('q') ?? getCatalogBrowseState(tipo).term,
   );
+  const { sort, setSort } = useSortPreference(tipo);
+  const { order, setOrder } = useCategoryOrder(tipo);
 
   const debouncedTerm = useDebounced(term);
   const categories = useCategories(accountId, tipo);
@@ -49,16 +58,19 @@ export function CatalogPage({
     if (categoriaId) next.set('cat', categoriaId);
     const q = debouncedTerm.trim();
     if (q) next.set('q', q);
-    if (sort !== 'nombre_asc') next.set('s', sort);
     setSearchParams(next, { replace: true });
-  }, [categoriaId, debouncedTerm, sort, setSearchParams]);
+    setCatalogBrowseState(tipo, { categoriaId, term: debouncedTerm });
+  }, [categoriaId, debouncedTerm, tipo, setSearchParams]);
 
   const options = [
     { id: undefined as string | undefined, label: t('catalog.all') },
-    ...(categories.data ?? []).map((c) => ({
-      id: c.categoria_id ?? undefined,
-      label: c.categoria ?? t('catalog.all'),
-    })),
+    ...applyCategoryOrder(
+      (categories.data ?? []).map((c) => ({
+        id: c.categoria_id ?? undefined,
+        label: c.categoria ?? t('catalog.all'),
+      })),
+      order,
+    ),
   ];
 
   return (
@@ -75,6 +87,7 @@ export function CatalogPage({
         categoryPlaceholder={t('catalog.category')}
         sort={sort}
         onSortChange={setSort}
+        onReorderCategories={setOrder}
       />
 
       {isFirstLoad ? (

@@ -1,6 +1,6 @@
 export type ContentType = 'live' | 'movie' | 'series';
 
-export type ContentSort = 'nombre_asc' | 'nombre_desc' | 'anio_desc' | 'anio_asc' | 'reciente';
+export type ContentSort = 'defecto' | 'nombre_asc' | 'nombre_desc' | 'anio_desc' | 'anio_asc' | 'reciente';
 
 export interface Cuenta {
   id: string;
@@ -25,6 +25,7 @@ export interface Contenido {
   genero: string | null;
   anio: string | null;
   duracion_secs: number | null;
+  orden: number | null;
   created_at: number;
   updated_at: number;
 }

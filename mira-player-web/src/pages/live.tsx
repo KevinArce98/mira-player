@@ -5,10 +5,16 @@ import { ChannelRow } from '@/components/media/channel-row';
 import { CatalogToolbar } from '@/components/ui/catalog-toolbar';
 import { Empty, Loading } from '@/components/ui/empty';
 import { useAccount } from '@/hooks/data/use-account';
-import { useCatalog, useCategories } from '@/hooks/data/use-catalog';
+import {
+  applyCategoryOrder,
+  useCatalog,
+  useCategories,
+  useCategoryOrder,
+  useSortPreference,
+} from '@/hooks/data/use-catalog';
 import { useDebounced } from '@/hooks/use-debounced';
 import { useT } from '@/providers/preferences';
-import type { ContentSort } from '@/types/models';
+import { getCatalogBrowseState, setCatalogBrowseState } from '@/stores/browse';
 
 export function LivePage() {
   const t = useT();
@@ -17,12 +23,13 @@ export function LivePage() {
   const accountId = account?.id;
   const [searchParams, setSearchParams] = useSearchParams();
   const [categoriaId, setCategoriaId] = useState<string | undefined>(
-    () => searchParams.get('cat') ?? undefined,
+    () => searchParams.get('cat') ?? getCatalogBrowseState('live').categoriaId,
   );
-  const [term, setTerm] = useState(() => searchParams.get('q') ?? '');
-  const [sort, setSort] = useState<ContentSort>(
-    () => (searchParams.get('s') as ContentSort) ?? 'nombre_asc',
+  const [term, setTerm] = useState(
+    () => searchParams.get('q') ?? getCatalogBrowseState('live').term,
   );
+  const { sort, setSort } = useSortPreference('live');
+  const { order, setOrder } = useCategoryOrder('live');
   const debouncedTerm = useDebounced(term);
   const categories = useCategories(accountId, 'live');
   const channels = useCatalog(accountId, 'live', categoriaId, debouncedTerm, sort);
@@ -32,16 +39,19 @@ export function LivePage() {
     if (categoriaId) next.set('cat', categoriaId);
     const q = debouncedTerm.trim();
     if (q) next.set('q', q);
-    if (sort !== 'nombre_asc') next.set('s', sort);
     setSearchParams(next, { replace: true });
-  }, [categoriaId, debouncedTerm, sort, setSearchParams]);
+    setCatalogBrowseState('live', { categoriaId, term: debouncedTerm });
+  }, [categoriaId, debouncedTerm, setSearchParams]);
 
   const options = [
     { id: undefined as string | undefined, label: t('live.all') },
-    ...(categories.data ?? []).map((c) => ({
-      id: c.categoria_id ?? undefined,
-      label: c.categoria ?? t('live.all'),
-    })),
+    ...applyCategoryOrder(
+      (categories.data ?? []).map((c) => ({
+        id: c.categoria_id ?? undefined,
+        label: c.categoria ?? t('live.all'),
+      })),
+      order,
+    ),
   ];
 
   return (
@@ -57,6 +67,7 @@ export function LivePage() {
         categoryPlaceholder={t('catalog.category')}
         sort={sort}
         onSortChange={setSort}
+        onReorderCategories={setOrder}
       />
 
       <div className="flex-1 overflow-y-auto">

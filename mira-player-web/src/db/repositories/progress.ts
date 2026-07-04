@@ -1,4 +1,5 @@
 import { getDatabase } from '@/db';
+import { parentalClauses, type ParentalFilter } from '@/db/repositories/content';
 import { uuid } from '@/lib/id';
 import type { Contenido, Episodio, Progreso } from '@/types/models';
 
@@ -114,11 +115,21 @@ export interface ContinueWatchingItem {
   episodio: Episodio | null;
 }
 
+export async function deleteProgress(progresoId: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM progreso WHERE id = ?;', [progresoId]);
+}
+
 export async function getContinueWatching(
   cuentaId: string,
   limit = 20,
+  parental?: ParentalFilter | null,
 ): Promise<ContinueWatchingItem[]> {
   const db = await getDatabase();
+  const params: (string | number)[] = [cuentaId];
+  const extraClauses = parentalClauses(parental, params, 'c.');
+  const extraWhere = extraClauses.length > 0 ? ` AND ${extraClauses.join(' AND ')}` : '';
+  params.push(limit);
   const rows = await db.getAllAsync<Record<string, unknown>>(
     `SELECT
         p.id AS p_id, p.content_id AS p_content_id, p.episode_id AS p_episode_id,
@@ -131,10 +142,10 @@ export async function getContinueWatching(
      FROM progreso p
      JOIN contenido c ON c.id = p.content_id
      LEFT JOIN episodios e ON e.id = p.episode_id
-     WHERE c.cuenta_id = ? AND p.completado = 0 AND p.posicion_segundos > 0
+     WHERE c.cuenta_id = ? AND p.completado = 0 AND p.posicion_segundos > 0${extraWhere}
      ORDER BY p.last_watched_at DESC
      LIMIT ?;`,
-    [cuentaId, limit],
+    params,
   );
 
   return rows.map((r) => ({
@@ -163,6 +174,7 @@ export async function getContinueWatching(
       genero: (r.genero as string | null) ?? null,
       anio: (r.anio as string | null) ?? null,
       duracion_secs: (r.duracion_secs as number | null) ?? null,
+      orden: (r.orden as number | null) ?? null,
       created_at: r.created_at as number,
       updated_at: r.updated_at as number,
     },

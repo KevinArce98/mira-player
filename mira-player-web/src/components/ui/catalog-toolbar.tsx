@@ -6,6 +6,7 @@ import type { ContentSort } from '@/types/models';
 export type { ComboboxOption };
 
 type SortKey =
+  | 'catalog.sort.defecto'
   | 'catalog.sort.nombre_asc'
   | 'catalog.sort.nombre_desc'
   | 'catalog.sort.anio_desc'
@@ -13,6 +14,7 @@ type SortKey =
   | 'catalog.sort.reciente';
 
 const SORT_OPTIONS: { value: ContentSort; labelKey: SortKey }[] = [
+  { value: 'defecto',     labelKey: 'catalog.sort.defecto' },
   { value: 'nombre_asc',  labelKey: 'catalog.sort.nombre_asc' },
   { value: 'nombre_desc', labelKey: 'catalog.sort.nombre_desc' },
   { value: 'anio_desc',   labelKey: 'catalog.sort.anio_desc' },
@@ -32,6 +34,7 @@ export function CatalogToolbar({
   categoryPlaceholder,
   sort,
   onSortChange,
+  onReorderCategories,
 }: {
   title: string;
   count?: number;
@@ -44,6 +47,7 @@ export function CatalogToolbar({
   categoryPlaceholder: string;
   sort?: ContentSort;
   onSortChange?: (sort: ContentSort) => void;
+  onReorderCategories?: (ids: string[]) => void;
 }) {
   const t = useT();
 
@@ -76,6 +80,7 @@ export function CatalogToolbar({
             selectedId={selectedId}
             onSelect={onSelectCategory}
             placeholder={categoryPlaceholder}
+            onReorder={onReorderCategories}
           />
         </div>
 

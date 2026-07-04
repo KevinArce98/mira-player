@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 
+import { ParentalProvider } from '@/providers/parental';
 import { PreferencesProvider } from '@/providers/preferences';
 import { queryClient } from '@/lib/query-client';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -32,6 +33,7 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <PreferencesProvider>
+        <ParentalProvider>
         <BrowserRouter>
           <Suspense fallback={<Loading />}>
             <Routes>
@@ -57,6 +59,7 @@ export function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
+        </ParentalProvider>
       </PreferencesProvider>
     </QueryClientProvider>
   );

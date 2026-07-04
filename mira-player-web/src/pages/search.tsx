@@ -6,16 +6,18 @@ import { Empty, Loading } from '@/components/ui/empty';
 import { useAccount } from '@/hooks/data/use-account';
 import { useSearch } from '@/hooks/data/use-catalog';
 import { useT } from '@/providers/preferences';
+import { getGlobalSearchTerm, setGlobalSearchTerm } from '@/stores/browse';
 
 export function SearchPage() {
   const t = useT();
   const navigate = useNavigate();
   const { data: account } = useAccount();
 
-  const [term, setTerm] = useState('');
-  const [debounced, setDebounced] = useState('');
+  const [term, setTerm] = useState(getGlobalSearchTerm);
+  const [debounced, setDebounced] = useState(getGlobalSearchTerm);
 
   useEffect(() => {
+    setGlobalSearchTerm(term);
     const timer = setTimeout(() => setDebounced(term), 300);
     return () => clearTimeout(timer);
   }, [term]);

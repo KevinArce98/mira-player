@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { RefreshCw, LogOut, Loader2 } from 'lucide-react';
+import { RefreshCw, LogOut, Loader2, ChevronRight } from 'lucide-react';
+import { BlockedCategoriesModal } from '@/components/parental/blocked-categories-modal';
+import { PinModal, type PinModalMode } from '@/components/parental/pin-modal';
 import { useAccount, useAccountStatus, useDeleteAccount } from '@/hooks/data/use-account';
 import { useSyncCatalog } from '@/hooks/data/use-sync';
 import { localeFor, type Language, type TranslationKey } from '@/lib/i18n';
+import { useParental } from '@/providers/parental';
 import { usePreferences, type ThemeMode } from '@/providers/preferences';
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
@@ -31,6 +35,20 @@ export function SettingsPage() {
   const { data: status, isLoading: statusLoading } = useAccountStatus();
   const sync = useSyncCatalog();
   const del = useDeleteAccount();
+  const parental = useParental();
+
+  const [pinPurpose, setPinPurpose] = useState<'enable' | 'disable' | 'manage' | null>(null);
+  const [blockedOpen, setBlockedOpen] = useState(false);
+
+  const pinMode: PinModalMode = pinPurpose === 'enable' ? 'create' : 'verify';
+
+  const onPinSuccess = async (pin: string) => {
+    const purpose = pinPurpose;
+    setPinPurpose(null);
+    if (purpose === 'enable') await parental.enable(pin);
+    else if (purpose === 'disable') await parental.disable();
+    else if (purpose === 'manage') setBlockedOpen(true);
+  };
 
   const lastSync = account?.ultima_sincronizacion
     ? new Date(account.ultima_sincronizacion).toLocaleString(locale)
@@ -99,6 +117,36 @@ export function SettingsPage() {
           onSelect={(k) => setLanguage(k as Language)}
         />
 
+        <SectionLabel>{t('parental.title')}</SectionLabel>
+        <div className="rounded-lg overflow-hidden border border-border bg-surface">
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-sm font-semibold text-fg">{t('parental.title')}</span>
+              <span className="text-xs text-muted">{t('parental.description')}</span>
+            </div>
+            <button
+              role="switch"
+              aria-checked={parental.enabled}
+              onClick={() => setPinPurpose(parental.enabled ? 'disable' : 'enable')}
+              className={`relative w-11 h-6 rounded-full border-0 cursor-pointer shrink-0 transition-colors ${parental.enabled ? 'bg-tint' : 'bg-border'}`}>
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${parental.enabled ? 'left-[22px]' : 'left-0.5'}`}
+              />
+            </button>
+          </div>
+          {parental.enabled ? (
+            <button
+              onClick={() => setPinPurpose('manage')}
+              className="flex items-center justify-between w-full gap-4 px-4 py-3 border-0 border-t border-border bg-transparent cursor-pointer">
+              <span className="text-sm text-fg">{t('parental.blockedCategories')}</span>
+              <span className="flex items-center gap-1 text-sm text-muted">
+                {parental.blockedCategoryIds.length}
+                <ChevronRight size={15} />
+              </span>
+            </button>
+          ) : null}
+        </div>
+
         <button
           onClick={() => account && sync.mutate(account)}
           disabled={sync.isPending}
@@ -120,6 +168,15 @@ export function SettingsPage() {
           {t('settings.logout')}
         </button>
       </div>
+
+      <PinModal
+        visible={pinPurpose !== null}
+        mode={pinMode}
+        onClose={() => setPinPurpose(null)}
+        onSuccess={(pin) => void onPinSuccess(pin)}
+        verify={parental.verifyPin}
+      />
+      <BlockedCategoriesModal visible={blockedOpen} onClose={() => setBlockedOpen(false)} />
     </div>
   );
 }

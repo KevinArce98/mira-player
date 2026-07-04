@@ -7,6 +7,8 @@ export interface RailItem {
   subtitle?: string | null;
   progress?: number;
   onPress?: () => void;
+  onRemove?: () => void;
+  removeLabel?: string;
 }
 
 export function ContentRail({
@@ -29,6 +31,8 @@ export function ContentRail({
               subtitle={item.subtitle}
               progress={item.progress}
               onPress={item.onPress}
+              onRemove={item.onRemove}
+              removeLabel={item.removeLabel}
             />
           </div>
         ))}

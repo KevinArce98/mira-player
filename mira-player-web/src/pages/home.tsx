@@ -5,7 +5,7 @@ import { ContentRail, type RailItem } from '@/components/media/content-rail';
 import { Empty, Loading } from '@/components/ui/empty';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { useAccount } from '@/hooks/data/use-account';
-import { useContinueWatching } from '@/hooks/data/use-continue-watching';
+import { useContinueWatching, useRemoveContinueWatching } from '@/hooks/data/use-continue-watching';
 import { useFavorites } from '@/hooks/data/use-favorites';
 import { useAutoSync } from '@/hooks/data/use-sync';
 import { useT } from '@/providers/preferences';
@@ -26,7 +26,14 @@ export function HomePage() {
   const accountId = account?.id;
   const sync = useAutoSync();
   const continueWatching = useContinueWatching(accountId);
+  const removeContinue = useRemoveContinueWatching();
   const favorites = useFavorites(accountId);
+
+  const confirmRemoveContinue = (progresoId: string, title: string) => {
+    if (window.confirm(t('continueWatching.removeMessage', { title }))) {
+      removeContinue.mutate(progresoId);
+    }
+  };
 
   const continueItems: RailItem[] = (continueWatching.data ?? []).map(
     ({ progreso, contenido, episodio }) => {
@@ -45,6 +52,8 @@ export function HomePage() {
         progress: fraction,
         onPress: () =>
           void navigate(`/player?contentId=${contenido.id}${episodio ? `&episodeId=${episodio.id}` : ''}`),
+        onRemove: () => confirmRemoveContinue(progreso.id, contenido.nombre),
+        removeLabel: t('continueWatching.removeTitle'),
       };
     },
   );

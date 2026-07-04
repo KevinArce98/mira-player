@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Check, Search } from 'lucide-react';
+import { ChevronDown, Check, Search, ArrowDown, ArrowUp, ListOrdered } from 'lucide-react';
+import { useT } from '@/providers/preferences';
 
 export interface ComboboxOption {
   id: string | undefined;
@@ -11,19 +12,37 @@ export function CategoryCombobox({
   selectedId,
   onSelect,
   placeholder,
+  onReorder,
 }: {
   options: ComboboxOption[];
   selectedId: string | undefined;
   onSelect: (id: string | undefined) => void;
   placeholder: string;
+  onReorder?: (ids: string[]) => void;
 }) {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [query, setQuery] = useState('');
   const [highlighted, setHighlighted] = useState(0);
   const wasOpenRef = useRef(false);
   const scrollNeededRef = useRef(false);
+
+  const reorderable = options.filter((o) => o.id != null);
+
+  const move = (id: string, delta: -1 | 1) => {
+    if (!onReorder) return;
+    const ids = reorderable.map((o) => o.id as string);
+    const from = ids.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    const next = [...ids];
+    next.splice(from, 1);
+    next.splice(to, 0, id);
+    onReorder(next);
+  };
 
   const selectedLabel = options.find((o) => o.id === selectedId)?.label ?? placeholder;
 
@@ -71,6 +90,7 @@ export function CategoryCombobox({
   const close = () => {
     setOpen(false);
     setQuery('');
+    setReordering(false);
   };
 
   const choose = (option: ComboboxOption) => {
@@ -134,7 +154,42 @@ export function CategoryCombobox({
           id="category-listbox"
           role="listbox"
           className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-lg bg-surface border border-border shadow-lg py-1">
-          {filtered.length === 0 ? (
+          {onReorder ? (
+            <li className="px-3 py-1.5 border-b border-border">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReordering((r) => !r);
+                }}
+                className="flex items-center gap-2 w-full bg-transparent border-0 cursor-pointer text-xs font-semibold text-tint">
+                <ListOrdered size={14} />
+                {reordering ? t('category.done') : t('category.reorder')}
+              </button>
+            </li>
+          ) : null}
+          {reordering ? (
+            reorderable.map((o, idx) => (
+              <li
+                key={o.id}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-fg">
+                <span className="truncate flex-1">{o.label}</span>
+                <span className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); move(o.id as string, -1); }}
+                    disabled={idx === 0}
+                    className="bg-transparent border-0 cursor-pointer text-fg disabled:text-border disabled:cursor-default">
+                    <ArrowUp size={16} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); move(o.id as string, 1); }}
+                    disabled={idx === reorderable.length - 1}
+                    className="bg-transparent border-0 cursor-pointer text-fg disabled:text-border disabled:cursor-default">
+                    <ArrowDown size={16} />
+                  </button>
+                </span>
+              </li>
+            ))
+          ) : filtered.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">{query}</li>
           ) : (
             filtered.map((o, idx) => {

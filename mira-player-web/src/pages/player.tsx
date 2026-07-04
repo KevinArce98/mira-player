@@ -11,9 +11,11 @@ import { getNextEpisode } from '@/db/repositories/episodes';
 import { setCompleted } from '@/db/repositories/progress';
 import { useT } from '@/providers/preferences';
 import { languageLabel } from '@/lib/language';
+import type { Episodio } from '@/types/models';
 
 const SKIP_SECONDS = 10;
 const HIDE_DELAY = 3500;
+const NEXT_EPISODE_COUNTDOWN = 10;
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -71,6 +73,8 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
   const [selectedAudio, setSelectedAudio] = useState(-1);
   const [selectedSub, setSelectedSub] = useState(-1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [nextUp, setNextUp] = useState<Episodio | null>(null);
+  const [countdown, setCountdown] = useState(NEXT_EPISODE_COUNTDOWN);
 
   const isLive = content?.tipo === 'live';
 
@@ -217,12 +221,32 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
     if (episodeId && episode) {
       const next = await getNextEpisode(contentId, episode.temporada, episode.episodio);
       if (next) {
-        void navigate(`/player?contentId=${contentId}&episodeId=${next.id}`, { replace: true });
+        setCountdown(NEXT_EPISODE_COUNTDOWN);
+        setNextUp(next);
         return;
       }
     }
     navigate(-1);
   };
+
+  const playNext = useCallback(() => {
+    if (!nextUp) return;
+    void navigate(`/player?contentId=${contentId}&episodeId=${nextUp.id}`, { replace: true });
+  }, [nextUp, contentId, navigate]);
+
+  const cancelNext = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!nextUp) return;
+    const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [nextUp]);
+
+  useEffect(() => {
+    if (nextUp && countdown <= 0) playNext();
+  }, [nextUp, countdown, playNext]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -393,6 +417,36 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
                 </span>
               </div>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {nextUp ? (
+        <div
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/85 p-8"
+          onClick={(e) => e.stopPropagation()}>
+          <p className="text-white/70 text-sm font-semibold uppercase tracking-widest">
+            {t('player.nextEpisode')}
+          </p>
+          <p className="text-white text-xl font-semibold text-center" style={{ fontFamily: '"Montserrat", sans-serif' }}>
+            {`T${nextUp.temporada} · E${nextUp.episodio}${nextUp.titulo ? `  ·  ${nextUp.titulo}` : ''}`}
+          </p>
+          <p className="tabular-nums" style={{ color: '#D4AA7D', fontSize: 16 }}>
+            {t('player.nextIn', { seconds: countdown })}
+          </p>
+          <div className="flex items-center gap-4 mt-4">
+            <button
+              onClick={playNext}
+              className="flex items-center gap-2 px-5 py-3 rounded-full border-0 cursor-pointer font-bold"
+              style={{ backgroundColor: '#D4AA7D', color: '#272727' }}>
+              <Play size={16} fill="#272727" />
+              {t('player.playNow')}
+            </button>
+            <button
+              onClick={cancelNext}
+              className="px-5 py-3 rounded-full bg-transparent cursor-pointer font-semibold text-white border border-white/40">
+              {t('common.cancel')}
+            </button>
           </div>
         </div>
       ) : null}
