@@ -13,14 +13,16 @@ import { useSearch } from '@/hooks/data/use-catalog';
 import { useTheme } from '@/hooks/use-theme';
 import { openContent } from '@/lib/navigation';
 import { useT } from '@/providers/preferences';
+import { useBrowseStore } from '@/stores/browse';
 
 export default function SearchScreen() {
   const theme = useTheme();
   const t = useT();
   const { data: account } = useAccount();
 
-  const [term, setTerm] = useState('');
-  const [debounced, setDebounced] = useState('');
+  const term = useBrowseStore((s) => s.searchTerm);
+  const setTerm = useBrowseStore((s) => s.setSearchTerm);
+  const [debounced, setDebounced] = useState(term);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(term), 300);

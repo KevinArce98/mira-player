@@ -19,14 +19,17 @@ export function CategoryPicker({
   options,
   selectedId,
   onSelect,
+  onReorder,
 }: {
   options: CategoryOption[];
   selectedId: string | undefined;
   onSelect: (id: string | undefined) => void;
+  onReorder?: (ids: string[]) => void;
 }) {
   const theme = useTheme();
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [query, setQuery] = useState('');
   const listRef = useRef<FlatList<CategoryOption>>(null);
   const wasOpen = useRef(false);
@@ -34,10 +37,23 @@ export function CategoryPicker({
   const selectedLabel = options.find((o) => o.id === selectedId)?.label ?? options[0]?.label ?? '';
 
   const filtered = useMemo(() => {
+    if (reordering) return options.filter((o) => o.id != null);
     const q = query.trim().toLowerCase();
     if (!q) return options;
     return options.filter((o) => o.label.toLowerCase().includes(q));
-  }, [options, query]);
+  }, [options, query, reordering]);
+
+  const move = (id: string, delta: -1 | 1) => {
+    if (!onReorder) return;
+    const ids = options.filter((o) => o.id != null).map((o) => o.id as string);
+    const from = ids.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    const next = [...ids];
+    next.splice(from, 1);
+    next.splice(to, 0, id);
+    onReorder(next);
+  };
 
   useEffect(() => {
     if (open && !wasOpen.current) {
@@ -54,6 +70,7 @@ export function CategoryPicker({
   const close = () => {
     setOpen(false);
     setQuery('');
+    setReordering(false);
   };
 
   const pick = (id: string | undefined) => {
@@ -78,23 +95,44 @@ export function CategoryPicker({
         <View style={[styles.sheet, { backgroundColor: theme.background, borderColor: theme.border }]}>
           <SafeAreaView edges={['bottom']} style={styles.sheetInner}>
             <View style={styles.header}>
-              <ThemedText type="subtitle">{t('category.title')}</ThemedText>
-              <Pressable onPress={close} hitSlop={12}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </Pressable>
+              <ThemedText type="subtitle">
+                {reordering ? t('category.reorder') : t('category.title')}
+              </ThemedText>
+              <View style={styles.headerActions}>
+                {onReorder ? (
+                  <Pressable onPress={() => setReordering((r) => !r)} hitSlop={12}>
+                    {reordering ? (
+                      <ThemedText type="small" style={{ color: theme.accent, fontFamily: Fonts.semibold }}>
+                        {t('category.done')}
+                      </ThemedText>
+                    ) : (
+                      <Ionicons name="swap-vertical" size={22} color={theme.text} />
+                    )}
+                  </Pressable>
+                ) : null}
+                <Pressable onPress={close} hitSlop={12}>
+                  <Ionicons name="close" size={24} color={theme.text} />
+                </Pressable>
+              </View>
             </View>
 
-            <View style={[styles.search, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-              <Ionicons name="search" size={18} color={theme.textSecondary} />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder={t('category.search')}
-                placeholderTextColor={theme.textSecondary}
-                autoCorrect={false}
-                style={[styles.searchInput, { color: theme.text, fontFamily: Fonts.regular }]}
-              />
-            </View>
+            {reordering ? (
+              <ThemedText type="small" themeColor="textSecondary" style={styles.reorderHint}>
+                {t('category.reorderHint')}
+              </ThemedText>
+            ) : (
+              <View style={[styles.search, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                <Ionicons name="search" size={18} color={theme.textSecondary} />
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={t('category.search')}
+                  placeholderTextColor={theme.textSecondary}
+                  autoCorrect={false}
+                  style={[styles.searchInput, { color: theme.text, fontFamily: Fonts.regular }]}
+                />
+              </View>
+            )}
 
             <FlatList
               ref={listRef}
@@ -110,7 +148,38 @@ export function CategoryPicker({
               }}
               style={styles.list}
               contentContainerStyle={styles.listContent}
-              renderItem={({ item }) => {
+              renderItem={({ item, index }) => {
+                if (reordering) {
+                  return (
+                    <View style={styles.option}>
+                      <ThemedText style={styles.reorderLabel} numberOfLines={1}>
+                        {item.label}
+                      </ThemedText>
+                      <View style={styles.reorderButtons}>
+                        <Pressable
+                          onPress={() => move(item.id as string, -1)}
+                          hitSlop={8}
+                          disabled={index === 0}>
+                          <Ionicons
+                            name="chevron-up"
+                            size={22}
+                            color={index === 0 ? theme.border : theme.text}
+                          />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => move(item.id as string, 1)}
+                          hitSlop={8}
+                          disabled={index === filtered.length - 1}>
+                          <Ionicons
+                            name="chevron-down"
+                            size={22}
+                            color={index === filtered.length - 1 ? theme.border : theme.text}
+                          />
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                }
                 const active = item.id === selectedId;
                 return (
                   <Pressable
@@ -164,6 +233,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: Spacing.three,
   },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  reorderHint: { paddingBottom: Spacing.two },
+  reorderLabel: { flex: 1, paddingRight: Spacing.two },
+  reorderButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   search: {
     flexDirection: 'row',
     alignItems: 'center',

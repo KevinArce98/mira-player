@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ContentRail, type RailItem } from '@/components/media/content-rail';
@@ -8,10 +8,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Empty } from '@/components/ui/empty';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import { RatingPrompt } from '@/components/ui/rating-modal';
 import { ScreenTitle } from '@/components/ui/screen-title';
 import { Spacing } from '@/constants/theme';
 import { useAccount } from '@/hooks/data/use-account';
-import { useContinueWatching } from '@/hooks/data/use-continue-watching';
+import { useContinueWatching, useRemoveContinueWatching } from '@/hooks/data/use-continue-watching';
 import { useFavorites } from '@/hooks/data/use-favorites';
 import { useAutoSync } from '@/hooks/data/use-sync';
 import { useTheme } from '@/hooks/use-theme';
@@ -35,7 +36,19 @@ export default function HomeScreen() {
 
   const sync = useAutoSync();
   const continueWatching = useContinueWatching(accountId);
+  const removeContinue = useRemoveContinueWatching();
   const favorites = useFavorites(accountId);
+
+  const confirmRemoveContinue = (progresoId: string, title: string) => {
+    Alert.alert(t('continueWatching.removeTitle'), t('continueWatching.removeMessage', { title }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.remove'),
+        style: 'destructive',
+        onPress: () => removeContinue.mutate(progresoId),
+      },
+    ]);
+  };
 
   const continueItems: RailItem[] = (continueWatching.data ?? []).map(({ progreso, contenido, episodio }) => {
     const fraction =
@@ -50,6 +63,7 @@ export default function HomeScreen() {
       posterUrl: episodio?.poster_url ?? contenido.poster_url,
       progress: fraction,
       onPress: () => playContent(contenido.id, episodio?.id),
+      onLongPress: () => confirmRemoveContinue(progreso.id, contenido.nombre),
     };
   });
 
@@ -123,6 +137,8 @@ export default function HomeScreen() {
             </>
           )}
         </ScrollView>
+
+        <RatingPrompt />
       </SafeAreaView>
     </ThemedView>
   );

@@ -32,11 +32,14 @@ import { useSubtitleLang } from '@/hooks/data/use-preferences';
 import { useProgressTracker } from '@/hooks/data/use-progress-tracker';
 import { useXtreamClient } from '@/hooks/data/use-xtream-client';
 import { resolvePlaybackUrl } from '@/services/playback';
+import { recordCompletedPlayback } from '@/services/rating';
+import type { Episodio } from '@/types/models';
 
 const DISABLED_TRACK: SelectedTrack = { type: SelectedTrackType.DISABLED };
 const SYSTEM_AUDIO: SelectedTrack = { type: SelectedTrackType.SYSTEM };
 const SKIP_SECONDS = 10;
 const HIDE_DELAY = 3500;
+const NEXT_EPISODE_COUNTDOWN = 10;
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -101,6 +104,8 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
   const [selectedAudio, setSelectedAudio] = useState<SelectedTrack>(SYSTEM_AUDIO);
   const [menuOpen, setMenuOpen] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [nextUp, setNextUp] = useState<Episodio | null>(null);
+  const [countdown, setCountdown] = useState(NEXT_EPISODE_COUNTDOWN);
   const seekedRef = useRef(false);
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -197,15 +202,36 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
       return;
     }
     await setCompleted(contentId, true, episodeId ?? null);
+    void recordCompletedPlayback();
     if (episodeId && episode) {
       const next = await getNextEpisode(contentId, episode.temporada, episode.episodio);
       if (next) {
-        router.replace({ pathname: '/player', params: { contentId, episodeId: next.id } });
+        setCountdown(NEXT_EPISODE_COUNTDOWN);
+        setNextUp(next);
         return;
       }
     }
     router.back();
   };
+
+  const playNext = useCallback(() => {
+    if (!nextUp) return;
+    router.replace({ pathname: '/player', params: { contentId, episodeId: nextUp.id } });
+  }, [nextUp, contentId]);
+
+  const cancelNext = useCallback(() => {
+    router.back();
+  }, []);
+
+  useEffect(() => {
+    if (!nextUp) return;
+    const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [nextUp]);
+
+  useEffect(() => {
+    if (nextUp && countdown <= 0) playNext();
+  }, [nextUp, countdown, playNext]);
 
   const togglePlay = () => {
     setPaused((p) => !p);
@@ -403,6 +429,25 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
         </View>
       ) : null}
 
+      {nextUp ? (
+        <View style={styles.nextOverlay}>
+          <Text style={styles.nextTitle}>{t('player.nextEpisode')}</Text>
+          <Text style={styles.nextEpisodeLabel} numberOfLines={1}>
+            {`T${nextUp.temporada} · E${nextUp.episodio}${nextUp.titulo ? `  ·  ${nextUp.titulo}` : ''}`}
+          </Text>
+          <Text style={styles.nextCountdown}>{t('player.nextIn', { seconds: countdown })}</Text>
+          <View style={styles.nextButtons}>
+            <Pressable onPress={playNext} style={styles.nextPlayButton}>
+              <Ionicons name="play" size={18} color="#272727" />
+              <Text style={styles.nextPlayText}>{t('player.playNow')}</Text>
+            </Pressable>
+            <Pressable onPress={cancelNext} style={styles.nextCancelButton}>
+              <Text style={styles.nextCancelText}>{t('common.cancel')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setMenuOpen(false)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
@@ -510,4 +555,38 @@ const styles = StyleSheet.create({
   errorText: { color: '#fff', fontSize: 14, fontFamily: Fonts.medium, textAlign: 'center' },
   sheetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   sheetText: { color: '#F3EEE6', fontSize: 16, fontFamily: Fonts.medium },
+  nextOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 32,
+  },
+  nextTitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: Fonts.semibold, textTransform: 'uppercase', letterSpacing: 1 },
+  nextEpisodeLabel: { color: '#fff', fontSize: 20, fontFamily: Fonts.displaySemibold, textAlign: 'center' },
+  nextCountdown: { color: '#D4AA7D', fontSize: 16, fontFamily: Fonts.medium, fontVariant: ['tabular-nums'] },
+  nextButtons: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16 },
+  nextPlayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#D4AA7D',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  nextPlayText: { color: '#272727', fontSize: 15, fontFamily: Fonts.bold },
+  nextCancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  nextCancelText: { color: '#fff', fontSize: 15, fontFamily: Fonts.semibold },
 });

@@ -42,7 +42,7 @@ const POSTER_COSMOS_LAUNDROMAT = `${WIKI}/c/c5/CosmosLaundromatPoster.jpg/500px-
 const POSTER_SPRING = `${WIKI}/3/30/Blender_Open_Movie_-_Spring_%282019%29.png/500px-Blender_Open_Movie_-_Spring_%282019%29.png`;
 const POSTER_CAMINANDES = `${WIKI}/a/aa/Blender_Foundation_-_Caminandes_-_Episode_3_-_Llamigos_-_Cover_thumbnail.png/500px-Blender_Foundation_-_Caminandes_-_Episode_3_-_Llamigos_-_Cover_thumbnail.png`;
 
-const DEMO_MOVIES: Omit<ContentUpsert, 'cuenta_id'>[] = [
+const DEMO_MOVIES: Omit<ContentUpsert, 'cuenta_id' | 'orden'>[] = [
   { tipo: 'movie', stream_id: 2001, nombre: 'Big Buck Bunny',          categoria: 'Open Movies', categoria_id: 'demo_movies', poster_url: POSTER_BIG_BUCK_BUNNY,    container_extension: 'mp4', epg_channel_id: null },
   { tipo: 'movie', stream_id: 2002, nombre: 'Elephants Dream',         categoria: 'Open Movies', categoria_id: 'demo_movies', poster_url: POSTER_ELEPHANTS_DREAM,   container_extension: 'mp4', epg_channel_id: null },
   { tipo: 'movie', stream_id: 2003, nombre: 'Sintel',                  categoria: 'Open Movies', categoria_id: 'demo_movies', poster_url: POSTER_SINTEL,            container_extension: 'mp4', epg_channel_id: null },
@@ -51,7 +51,7 @@ const DEMO_MOVIES: Omit<ContentUpsert, 'cuenta_id'>[] = [
   { tipo: 'movie', stream_id: 2006, nombre: 'Caminandes: Llamigos',    categoria: 'Shorts',      categoria_id: 'demo_shorts', poster_url: POSTER_CAMINANDES,        container_extension: 'mp4', epg_channel_id: null },
 ];
 
-const DEMO_SERIES: Omit<ContentUpsert, 'cuenta_id'>[] = [
+const DEMO_SERIES: Omit<ContentUpsert, 'cuenta_id' | 'orden'>[] = [
   { tipo: 'series', stream_id: 3001, nombre: 'Blender Open Movies', categoria: 'Open Content', categoria_id: 'demo_series', poster_url: POSTER_SINTEL,  container_extension: null, epg_channel_id: null },
   { tipo: 'series', stream_id: 3002, nombre: 'Short Films',         categoria: 'Open Content', categoria_id: 'demo_series', poster_url: POSTER_SPRING,  container_extension: null, epg_channel_id: null },
 ];
@@ -73,8 +73,8 @@ export function getDemoEpisodes(serieId: string, serieStreamId: number): Episode
   return episodes.map((ep) => ({ ...ep, serie_id: serieId }));
 }
 
-function withAccount(items: Omit<ContentUpsert, 'cuenta_id'>[], cuentaId: string): ContentUpsert[] {
-  return items.map((item) => ({ ...item, cuenta_id: cuentaId }));
+function withAccount(items: Omit<ContentUpsert, 'cuenta_id' | 'orden'>[], cuentaId: string): ContentUpsert[] {
+  return items.map((item, index) => ({ ...item, cuenta_id: cuentaId, orden: index }));
 }
 
 export async function syncDemoCatalog(cuenta: Cuenta): Promise<number> {

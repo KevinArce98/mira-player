@@ -16,6 +16,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { queryClient } from '@/lib/query-client';
+import { ParentalProvider } from '@/providers/parental';
 import { PreferencesProvider, usePreferences } from '@/providers/preferences';
 
 SplashScreen.preventAutoHideAsync();
@@ -104,7 +105,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <PreferencesProvider>
-          <ThemedNavigation fontsReady={fontsLoaded || !!fontError} />
+          <ParentalProvider>
+            <ThemedNavigation fontsReady={fontsLoaded || !!fontError} />
+          </ParentalProvider>
         </PreferencesProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,23 +8,35 @@ import { Empty, Loading } from '@/components/ui/empty';
 import { ScreenTitle } from '@/components/ui/screen-title';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useAccount } from '@/hooks/data/use-account';
-import { useCatalog, useCategories } from '@/hooks/data/use-catalog';
+import {
+  applyCategoryOrder,
+  useCatalog,
+  useCategories,
+  useCategoryOrder,
+} from '@/hooks/data/use-catalog';
 import { openContent } from '@/lib/navigation';
 import { useT } from '@/providers/preferences';
+import { useBrowseStore } from '@/stores/browse';
 
 export default function LiveScreen() {
   const t = useT();
   const { data: account } = useAccount();
   const accountId = account?.id;
 
-  const [categoriaId, setCategoriaId] = useState<string | undefined>(undefined);
+  const categoriaId = useBrowseStore((s) => s.categoryByType.live);
+  const setCategory = useBrowseStore((s) => s.setCategory);
+  const { order, setOrder } = useCategoryOrder('live');
   const categories = useCategories(accountId, 'live');
   const channels = useCatalog(accountId, 'live', categoriaId);
 
-  const options = [
-    { id: undefined as string | undefined, label: t('live.all') },
-    ...(categories.data ?? []).map((c) => ({ id: c.categoria_id ?? undefined, label: c.categoria ?? t('live.all') })),
-  ];
+  const categoryOptions = applyCategoryOrder(
+    (categories.data ?? []).map((c) => ({
+      id: c.categoria_id ?? undefined,
+      label: c.categoria ?? t('live.all'),
+    })),
+    order,
+  );
+  const options = [{ id: undefined as string | undefined, label: t('live.all') }, ...categoryOptions];
 
   return (
     <ThemedView style={styles.root}>
@@ -33,7 +44,12 @@ export default function LiveScreen() {
         <ScreenTitle title={t('live.title')} />
 
         <View style={styles.pickerWrap}>
-          <CategoryPicker options={options} selectedId={categoriaId} onSelect={setCategoriaId} />
+          <CategoryPicker
+            options={options}
+            selectedId={categoriaId}
+            onSelect={(id) => setCategory('live', id)}
+            onReorder={setOrder}
+          />
         </View>
 
         {channels.isLoading ? (

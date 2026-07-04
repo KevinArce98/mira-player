@@ -37,7 +37,7 @@ export async function syncCatalog(
     client.liveStreams(undefined, signal),
   ]);
   const liveNames = categoryNameMap(liveCats);
-  const liveItems: ContentUpsert[] = liveStreams.map((s) => ({
+  const liveItems: ContentUpsert[] = liveStreams.map((s, index) => ({
     cuenta_id: cuenta.id,
     tipo: 'live',
     stream_id: s.stream_id,
@@ -47,6 +47,7 @@ export async function syncCatalog(
     poster_url: s.stream_icon,
     container_extension: null,
     epg_channel_id: s.epg_channel_id,
+    orden: index,
   }));
   written += await upsertContentBatch(liveItems);
   onProgress?.({ stage: 'live', written });
@@ -56,7 +57,7 @@ export async function syncCatalog(
     client.vodStreams(undefined, signal),
   ]);
   const vodNames = categoryNameMap(vodCats);
-  const vodItems: ContentUpsert[] = vodStreams.map((s) => ({
+  const vodItems: ContentUpsert[] = vodStreams.map((s, index) => ({
     cuenta_id: cuenta.id,
     tipo: 'movie',
     stream_id: s.stream_id,
@@ -66,6 +67,7 @@ export async function syncCatalog(
     poster_url: s.stream_icon,
     container_extension: s.container_extension,
     epg_channel_id: null,
+    orden: index,
   }));
   written += await upsertContentBatch(vodItems);
   onProgress?.({ stage: 'movies', written });
@@ -75,7 +77,7 @@ export async function syncCatalog(
     client.series(undefined, signal),
   ]);
   const seriesNames = categoryNameMap(seriesCats);
-  const seriesItems: ContentUpsert[] = seriesList.map((s) => ({
+  const seriesItems: ContentUpsert[] = seriesList.map((s, index) => ({
     cuenta_id: cuenta.id,
     tipo: 'series',
     stream_id: s.series_id,
@@ -85,6 +87,7 @@ export async function syncCatalog(
     poster_url: s.cover,
     container_extension: null,
     epg_channel_id: null,
+    orden: index,
   }));
   written += await upsertContentBatch(seriesItems);
   onProgress?.({ stage: 'series', written });

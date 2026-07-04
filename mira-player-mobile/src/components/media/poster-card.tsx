@@ -15,6 +15,7 @@ export interface PosterCardProps {
   aspectRatio?: number;
   width: number;
   onPress?: () => void;
+  onLongPress?: () => void;
 }
 
 export function PosterCard({
@@ -25,11 +26,13 @@ export function PosterCard({
   aspectRatio = 2 / 3,
   width,
   onPress,
+  onLongPress,
 }: PosterCardProps) {
   const theme = useTheme();
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
       style={({ pressed }) => [{ width }, pressed && styles.pressed]}>
       <View
         style={[

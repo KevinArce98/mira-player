@@ -1,4 +1,5 @@
 import { getDatabase } from '@/db';
+import { parentalClauses, type ParentalFilter } from '@/db/repositories/content';
 import { uuid } from '@/lib/id';
 import type { Contenido, Favorito } from '@/types/models';
 
@@ -25,13 +26,19 @@ export async function toggleFavorite(contentId: string): Promise<boolean> {
   return true;
 }
 
-export async function listFavorites(cuentaId: string): Promise<Contenido[]> {
+export async function listFavorites(
+  cuentaId: string,
+  parental?: ParentalFilter | null,
+): Promise<Contenido[]> {
   const db = await getDatabase();
+  const params: (string | number)[] = [cuentaId];
+  const extraClauses = parentalClauses(parental, params, 'c.');
+  const extraWhere = extraClauses.length > 0 ? ` AND ${extraClauses.join(' AND ')}` : '';
   return db.getAllAsync<Contenido>(
     `SELECT c.* FROM favoritos f
      JOIN contenido c ON c.id = f.content_id
-     WHERE c.cuenta_id = ?
+     WHERE c.cuenta_id = ?${extraWhere}
      ORDER BY f.created_at DESC;`,
-    [cuentaId],
+    params,
   );
 }

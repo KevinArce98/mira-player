@@ -31,6 +31,7 @@ const es = {
   'catalog.empty.subtitle': 'Desliza hacia abajo en Inicio para sincronizar, o revisa tu cuenta.',
   'catalog.count': '{count} resultados',
   'catalog.sortTitle': 'Ordenar por',
+  'catalog.sort.defecto': 'Por defecto',
   'catalog.sort.nombre_asc': 'A → Z',
   'catalog.sort.nombre_desc': 'Z → A',
   'catalog.sort.anio_desc': 'Más reciente',
@@ -49,6 +50,9 @@ const es = {
 
   'category.title': 'Categorías',
   'category.search': 'Buscar categoría',
+  'category.reorder': 'Reordenar categorías',
+  'category.reorderHint': 'Usa las flechas para mover cada categoría.',
+  'category.done': 'Listo',
 
   'channel.noGuide': 'Sin guía disponible',
   'channel.next': 'Después: {title}',
@@ -90,6 +94,29 @@ const es = {
   'player.track': 'Pista {number}',
   'player.live': 'EN VIVO',
   'player.error': 'Error de reproducción',
+  'player.nextEpisode': 'Siguiente episodio',
+  'player.nextIn': 'Se reproducirá en {seconds} s',
+  'player.playNow': 'Reproducir ahora',
+
+  'parental.title': 'Control parental',
+  'parental.description': 'Oculta las categorías de contenido adulto y las categorías que elijas. Protegido con PIN.',
+  'parental.blockedCategories': 'Categorías bloqueadas',
+  'parental.blockedCategories.subtitle': 'El contenido de las categorías marcadas se oculta en toda la app. Las categorías de adultos se bloquean automáticamente.',
+  'parental.pin.create': 'Crea un PIN de 4 dígitos',
+  'parental.pin.confirm': 'Confirma el PIN',
+  'parental.pin.enter': 'Introduce tu PIN',
+  'parental.pin.mismatch': 'Los PIN no coinciden. Inténtalo de nuevo.',
+  'parental.pin.wrong': 'PIN incorrecto.',
+  'parental.pin.hint': 'PIN de 4 dígitos',
+
+  'rating.title': '¿Disfrutas Mira Player?',
+  'rating.message': 'Tu valoración nos ayuda a seguir mejorando la app.',
+  'rating.rate': 'Calificar la app',
+  'rating.later': 'Más tarde',
+  'rating.never': 'No volver a preguntar',
+
+  'continueWatching.removeTitle': 'Quitar de Continuar viendo',
+  'continueWatching.removeMessage': '¿Quitar "{title}" de Continuar viendo?',
 
   'settings.title': 'Ajustes',
   'settings.server': 'Servidor',
@@ -121,6 +148,8 @@ const es = {
 
   'common.cancel': 'Cancelar',
   'common.delete': 'Eliminar',
+  'common.remove': 'Quitar',
+  'common.save': 'Guardar',
   'common.dash': '—',
   'language.es': 'Español',
   'language.en': 'Inglés',
@@ -157,6 +186,7 @@ const en: Dictionary = {
   'catalog.empty.subtitle': 'Pull to refresh on Home to sync, or check your account.',
   'catalog.count': '{count} results',
   'catalog.sortTitle': 'Sort by',
+  'catalog.sort.defecto': 'Default',
   'catalog.sort.nombre_asc': 'A → Z',
   'catalog.sort.nombre_desc': 'Z → A',
   'catalog.sort.anio_desc': 'Newest first',
@@ -175,6 +205,9 @@ const en: Dictionary = {
 
   'category.title': 'Categories',
   'category.search': 'Search category',
+  'category.reorder': 'Reorder categories',
+  'category.reorderHint': 'Use the arrows to move each category.',
+  'category.done': 'Done',
 
   'channel.noGuide': 'No guide available',
   'channel.next': 'Next: {title}',
@@ -216,6 +249,29 @@ const en: Dictionary = {
   'player.track': 'Track {number}',
   'player.live': 'LIVE',
   'player.error': 'Playback error',
+  'player.nextEpisode': 'Next episode',
+  'player.nextIn': 'Playing in {seconds} s',
+  'player.playNow': 'Play now',
+
+  'parental.title': 'Parental controls',
+  'parental.description': 'Hides adult content categories plus any categories you choose. PIN protected.',
+  'parental.blockedCategories': 'Blocked categories',
+  'parental.blockedCategories.subtitle': 'Content in checked categories is hidden across the app. Adult categories are blocked automatically.',
+  'parental.pin.create': 'Create a 4-digit PIN',
+  'parental.pin.confirm': 'Confirm the PIN',
+  'parental.pin.enter': 'Enter your PIN',
+  'parental.pin.mismatch': "PINs don't match. Try again.",
+  'parental.pin.wrong': 'Wrong PIN.',
+  'parental.pin.hint': '4-digit PIN',
+
+  'rating.title': 'Enjoying Mira Player?',
+  'rating.message': 'Your rating helps us keep improving the app.',
+  'rating.rate': 'Rate the app',
+  'rating.later': 'Maybe later',
+  'rating.never': "Don't ask again",
+
+  'continueWatching.removeTitle': 'Remove from Continue watching',
+  'continueWatching.removeMessage': 'Remove "{title}" from Continue watching?',
 
   'settings.title': 'Settings',
   'settings.server': 'Server',
@@ -247,6 +303,8 @@ const en: Dictionary = {
 
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',
+  'common.remove': 'Remove',
+  'common.save': 'Save',
   'common.dash': '—',
   'language.es': 'Spanish',
   'language.en': 'English',

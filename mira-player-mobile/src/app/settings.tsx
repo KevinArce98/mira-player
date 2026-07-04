@@ -1,15 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useRouter } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
+import { BlockedCategoriesModal } from '@/components/parental/blocked-categories-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PinModal, type PinModalMode } from '@/components/ui/pin-modal';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useAccount, useAccountStatus, useDeleteAccount } from '@/hooks/data/use-account';
 import { isDemoAccount } from '@/services/demo';
 import { useSyncCatalog } from '@/hooks/data/use-sync';
 import { useTheme } from '@/hooks/use-theme';
 import { localeFor, type Language, type TranslationKey } from '@/lib/i18n';
+import { useParental } from '@/providers/parental';
 import { usePreferences, type ThemeMode } from '@/providers/preferences';
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
@@ -40,6 +44,20 @@ export default function SettingsScreen() {
   const { data: status, isLoading: statusLoading } = useAccountStatus();
   const sync = useSyncCatalog();
   const del = useDeleteAccount();
+  const parental = useParental();
+
+  const [pinPurpose, setPinPurpose] = useState<'enable' | 'disable' | 'manage' | null>(null);
+  const [blockedOpen, setBlockedOpen] = useState(false);
+
+  const pinMode: PinModalMode = pinPurpose === 'enable' ? 'create' : 'verify';
+
+  const onPinSuccess = async (pin: string) => {
+    const purpose = pinPurpose;
+    setPinPurpose(null);
+    if (purpose === 'enable') await parental.enable(pin);
+    else if (purpose === 'disable') await parental.disable();
+    else if (purpose === 'manage') setBlockedOpen(true);
+  };
 
   const isDemo = account ? isDemoAccount(account) : false;
 
@@ -120,6 +138,37 @@ export default function SettingsScreen() {
           onSelect={(key) => setLanguage(key as Language)}
         />
 
+        <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
+          {t('parental.title')}
+        </ThemedText>
+        <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+          <View style={styles.row}>
+            <View style={styles.parentalText}>
+              <ThemedText type="small">{t('parental.title')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('parental.description')}
+              </ThemedText>
+            </View>
+            <Switch
+              value={parental.enabled}
+              onValueChange={(next) => setPinPurpose(next ? 'enable' : 'disable')}
+              trackColor={{ true: theme.tint }}
+              thumbColor="#fff"
+            />
+          </View>
+          {parental.enabled ? (
+            <Pressable onPress={() => setPinPurpose('manage')} style={[styles.row, styles.rowTopBorder, { borderTopColor: theme.border }]}>
+              <ThemedText type="small">{t('parental.blockedCategories')}</ThemedText>
+              <View style={styles.rowRight}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {parental.blockedCategoryIds.length}
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+              </View>
+            </Pressable>
+          ) : null}
+        </View>
+
         <Pressable
           onPress={() => account && sync.mutate(account)}
           disabled={sync.isPending}
@@ -144,6 +193,15 @@ export default function SettingsScreen() {
           <ThemedText style={[styles.buttonText, { color: theme.danger }]}>{t('settings.logout')}</ThemedText>
         </Pressable>
       </ScrollView>
+
+      <PinModal
+        visible={pinPurpose !== null}
+        mode={pinMode}
+        onClose={() => setPinPurpose(null)}
+        onSuccess={(pin) => void onPinSuccess(pin)}
+        verify={parental.verifyPin}
+      />
+      <BlockedCategoriesModal visible={blockedOpen} onClose={() => setBlockedOpen(false)} />
     </ThemedView>
   );
 }
@@ -203,6 +261,9 @@ const styles = StyleSheet.create({
   demoBanner: { padding: Spacing.three, gap: Spacing.one },
   demoTitle: { fontFamily: Fonts.bold },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.three },
+  rowTopBorder: { borderTopWidth: StyleSheet.hairlineWidth },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  parentalText: { flex: 1, gap: Spacing.half },
   value: { flexShrink: 1, fontFamily: Fonts.semibold },
   sectionLabel: { textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: -Spacing.two, marginLeft: Spacing.one },
   segment: {

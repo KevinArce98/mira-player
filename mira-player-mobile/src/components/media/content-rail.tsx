@@ -11,6 +11,7 @@ export interface RailItem {
   subtitle?: string | null;
   progress?: number;
   onPress?: () => void;
+  onLongPress?: () => void;
 }
 
 export function ContentRail({
@@ -45,6 +46,7 @@ export function ContentRail({
             aspectRatio={aspectRatio}
             width={cardWidth}
             onPress={item.onPress}
+            onLongPress={item.onLongPress}
           />
         )}
       />

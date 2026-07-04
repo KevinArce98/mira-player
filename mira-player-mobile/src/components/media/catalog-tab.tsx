@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,11 +10,19 @@ import { SortPicker } from '@/components/ui/sort-picker';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Fonts, Spacing } from '@/constants/theme';
 import { useAccount } from '@/hooks/data/use-account';
-import { useCatalog, useCatalogCount, useCategories } from '@/hooks/data/use-catalog';
+import {
+  applyCategoryOrder,
+  useCatalog,
+  useCatalogCount,
+  useCategories,
+  useCategoryOrder,
+  useSortPreference,
+} from '@/hooks/data/use-catalog';
 import type { TranslationKey } from '@/lib/i18n';
 import { openContent } from '@/lib/navigation';
 import { useT } from '@/providers/preferences';
-import type { ContentSort, ContentType } from '@/types/models';
+import { useBrowseStore } from '@/stores/browse';
+import type { ContentType } from '@/types/models';
 import { useTheme } from '@/hooks/use-theme';
 
 export function CatalogTab({ tipo, titleKey }: { tipo: ContentType; titleKey: TranslationKey }) {
@@ -24,17 +31,23 @@ export function CatalogTab({ tipo, titleKey }: { tipo: ContentType; titleKey: Tr
   const { data: account } = useAccount();
   const accountId = account?.id;
 
-  const [categoriaId, setCategoriaId] = useState<string | undefined>(undefined);
-  const [sort, setSort] = useState<ContentSort>('nombre_asc');
+  const categoriaId = useBrowseStore((s) => s.categoryByType[tipo]);
+  const setCategory = useBrowseStore((s) => s.setCategory);
+  const { sort, setSort } = useSortPreference(tipo);
+  const { order, setOrder } = useCategoryOrder(tipo);
 
   const categories = useCategories(accountId, tipo);
   const catalog = useCatalog(accountId, tipo, categoriaId, sort);
   const countQuery = useCatalogCount(accountId, tipo, categoriaId);
 
-  const options = [
-    { id: undefined as string | undefined, label: t('catalog.all') },
-    ...(categories.data ?? []).map((c) => ({ id: c.categoria_id ?? undefined, label: c.categoria ?? t('catalog.all') })),
-  ];
+  const categoryOptions = applyCategoryOrder(
+    (categories.data ?? []).map((c) => ({
+      id: c.categoria_id ?? undefined,
+      label: c.categoria ?? t('catalog.all'),
+    })),
+    order,
+  );
+  const options = [{ id: undefined as string | undefined, label: t('catalog.all') }, ...categoryOptions];
 
   const header = countQuery.data != null ? (
     <View style={styles.countRow}>
@@ -50,7 +63,12 @@ export function CatalogTab({ tipo, titleKey }: { tipo: ContentType; titleKey: Tr
         <ScreenTitle title={t(titleKey)} />
 
         <View style={styles.filterRow}>
-          <CategoryPicker options={options} selectedId={categoriaId} onSelect={setCategoriaId} />
+          <CategoryPicker
+            options={options}
+            selectedId={categoriaId}
+            onSelect={(id) => setCategory(tipo, id)}
+            onReorder={setOrder}
+          />
           <SortPicker sort={sort} onSelect={setSort} />
         </View>
 

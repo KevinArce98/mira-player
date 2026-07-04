@@ -84,6 +84,11 @@ const MIGRATIONS: string[] = [
   ALTER TABLE contenido ADD COLUMN anio TEXT;
   ALTER TABLE contenido ADD COLUMN duracion_secs INTEGER;
   `,
+
+  `
+  ALTER TABLE contenido ADD COLUMN orden INTEGER;
+  CREATE INDEX idx_contenido_orden ON contenido(cuenta_id, tipo, orden);
+  `,
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
