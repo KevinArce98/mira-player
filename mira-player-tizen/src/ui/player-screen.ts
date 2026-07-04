@@ -1,5 +1,5 @@
 import { getPlayer } from '@/player/avplay';
-import { Key } from '@/core/keys';
+import { Key, isBack } from '@/core/keys';
 import { back, replace } from '@/core/router';
 import type { Screen } from '@/core/router';
 import { getSession } from '@/core/session';
@@ -16,6 +16,13 @@ export interface PlayerOptions {
 
 const SEEK_MS = 15000;
 const SAVE_EVERY_MS = 5000;
+const NEXT_COUNTDOWN_SECONDS = 10;
+
+interface NextEpisodeInfo {
+  title: string;
+  media: MediaItem;
+  resume: ResumePayload;
+}
 
 export function createPlayerScreen(opts: PlayerOptions): Screen {
   const player = getPlayer();
@@ -31,6 +38,12 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
   let epgEl: HTMLElement;
   let spinner: HTMLElement;
   let hideTimer: number | undefined;
+  let nextOverlay: HTMLElement;
+  let nextTitleEl: HTMLElement;
+  let nextCountdownEl: HTMLElement;
+  let nextCountdownTimer: number | undefined;
+  let nextRemaining = 0;
+  let pendingNext: NextEpisodeInfo | undefined;
 
   function showOverlay(): void {
     overlay.classList.remove('hidden');
@@ -50,14 +63,11 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     return client.seriesStreamUrl(r.episodeId, r.ext);
   }
 
-  // Reproducción continua: al terminar un episodio de serie, busca el
-  // siguiente (misma temporada o la próxima) y lo reproduce automáticamente.
-  async function playNextEpisode(): Promise<void> {
+  // Busca el siguiente episodio de la serie (misma temporada o la próxima).
+  // Devuelve null si no hay más episodios o si algo falla.
+  async function resolveNextEpisode(): Promise<NextEpisodeInfo | null> {
     const r = opts.resume;
-    if (r.kind !== 'series') {
-      void back();
-      return;
-    }
+    if (r.kind !== 'series') return null;
     try {
       const info = await client.seriesInfo(r.seriesId);
       const seasons = Object.keys(info.episodes).sort((a, b) => Number(a) - Number(b));
@@ -73,11 +83,7 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
         while (!nextEp && ++nextSeasonIdx < seasons.length) {
           nextEp = (info.episodes[seasons[nextSeasonIdx]] ?? [])[0];
         }
-
-        if (!nextEp) {
-          void back();
-          return;
-        }
+        if (!nextEp) return null;
 
         const title = `${seriesName} — ${nextEp.title}`;
         const nextResume: ResumePayload = {
@@ -88,13 +94,60 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
           title,
         };
         const media: MediaItem = { kind: 'series', id: r.seriesId, name: title, icon: opts.media.icon };
-        await replace(() => createPlayerScreen({ title, media, resume: nextResume }));
+        return { title, media, resume: nextResume };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Al terminar un episodio: muestra 10s de cuenta regresiva con opción de
+  // cancelar antes de reproducir el siguiente automáticamente (tipo Netflix).
+  async function playNextEpisode(): Promise<void> {
+    const info = await resolveNextEpisode();
+    if (!info) {
+      void back();
+      return;
+    }
+    pendingNext = info;
+    nextRemaining = NEXT_COUNTDOWN_SECONDS;
+    nextTitleEl.textContent = info.title;
+    updateNextCountdown();
+    nextOverlay.classList.remove('hidden');
+    overlay.classList.add('hidden');
+    window.clearTimeout(hideTimer);
+    nextCountdownTimer = window.setInterval(() => {
+      nextRemaining -= 1;
+      if (nextRemaining <= 0) {
+        void confirmPlayNext();
         return;
       }
-      void back();
-    } catch {
-      void back();
-    }
+      updateNextCountdown();
+    }, 1000);
+  }
+
+  function updateNextCountdown(): void {
+    nextCountdownEl.textContent = `Se reproducirá en ${nextRemaining} s`;
+  }
+
+  function stopNextCountdown(): void {
+    window.clearInterval(nextCountdownTimer);
+    nextCountdownTimer = undefined;
+    nextOverlay.classList.add('hidden');
+    pendingNext = undefined;
+  }
+
+  async function confirmPlayNext(): Promise<void> {
+    const info = pendingNext;
+    stopNextCountdown();
+    if (!info) return;
+    await replace(() => createPlayerScreen({ title: info.title, media: info.media, resume: info.resume }));
+  }
+
+  function cancelNext(): void {
+    stopNextCountdown();
+    void back();
   }
 
   async function loadEpg(): Promise<void> {
@@ -130,7 +183,20 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
         }),
       ]);
 
-      root.append(spinner, overlay);
+      nextTitleEl = el('div', { class: 'next-title', html: '' });
+      nextCountdownEl = el('div', { class: 'next-countdown', html: '' });
+      const nextPlayBtn = el('button', { class: 'btn', html: 'Reproducir ahora' });
+      const nextCancelBtn = el('button', { class: 'btn-secondary btn', html: 'Cancelar' });
+      nextPlayBtn.addEventListener('click', () => void confirmPlayNext());
+      nextCancelBtn.addEventListener('click', () => cancelNext());
+      nextOverlay = el('div', { class: 'next-overlay hidden' }, [
+        el('div', { class: 'next-tag', html: 'Siguiente episodio' }),
+        nextTitleEl,
+        nextCountdownEl,
+        el('div', { class: 'next-actions' }, [nextPlayBtn, nextCancelBtn]),
+      ]);
+
+      root.append(spinner, overlay, nextOverlay);
       showOverlay();
       void loadEpg();
 
@@ -175,6 +241,17 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     },
 
     onKey(keyCode) {
+      if (pendingNext) {
+        if (keyCode === Key.Enter || keyCode === Key.MediaPlayPause || keyCode === Key.MediaPlay) {
+          void confirmPlayNext();
+          return true;
+        }
+        if (isBack(keyCode)) {
+          cancelNext();
+          return true;
+        }
+        return true;
+      }
       switch (keyCode) {
         case Key.Enter:
         case Key.MediaPlayPause: {
@@ -212,6 +289,7 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
 
     onExit() {
       window.clearTimeout(hideTimer);
+      window.clearInterval(nextCountdownTimer);
       persist();
       player.stop();
     },

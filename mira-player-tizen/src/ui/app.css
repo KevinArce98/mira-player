@@ -311,6 +311,24 @@
   object-fit: contain;
   padding: 16px;
 }
+.card-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.card-remove.focused {
+  background: var(--danger, #e0857a);
+}
 .card-progress {
   height: 5px;
   background: rgba(255, 255, 255, 0.2);
@@ -403,6 +421,47 @@
   min-height: 28px;
 }
 
+/* ---- Cuenta regresiva de siguiente episodio ---- */
+.next-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.88);
+  text-align: center;
+  transition: opacity 0.2s ease;
+}
+.next-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.next-tag {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.next-title {
+  font-size: 40px;
+  font-weight: 800;
+  max-width: 900px;
+}
+.next-countdown {
+  font-size: 24px;
+  color: var(--tint);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 12px;
+}
+.next-actions {
+  display: flex;
+  gap: 16px;
+}
+
 /* ---- Catálogo con barra de categorías ---- */
 .catalog {
   display: flex;
@@ -410,9 +469,21 @@
   flex: 1;
   min-height: 0;
 }
-.cat-list {
+.cat-col {
   flex: 0 0 360px;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.cat-hint {
+  flex: 0 0 auto;
+  font-size: 16px;
+  color: var(--text-secondary);
+  padding: 0 4px 12px;
+}
+.cat-list {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
   padding-right: 8px;

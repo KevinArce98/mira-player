@@ -27,12 +27,23 @@ export function mediaCard(item: MediaItem, onSelect: () => void): HTMLElement {
 }
 
 // Tarjeta de "Continuar viendo": igual que mediaCard pero con barra de
-// progreso sobre el póster (posición guardada / duración total).
-export function continueCard(entry: ProgressEntry, onSelect: () => void): HTMLElement {
+// progreso sobre el póster (posición guardada / duración total), más un
+// botón para quitarla de la lista sin necesidad de terminar de verla.
+export function continueCard(entry: ProgressEntry, onSelect: () => void, onRemove: () => void): HTMLElement {
   const pct =
     entry.durationMs > 0 ? Math.min(100, Math.max(0, (entry.positionMs / entry.durationMs) * 100)) : 0;
+  const removeBtn = el('button', {
+    class: 'card-remove focusable',
+    html: '✕',
+    title: 'Quitar de Continuar viendo',
+  });
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (window.confirm(`¿Quitar "${entry.item.name}" de Continuar viendo?`)) onRemove();
+  });
   const card = el('div', { class: 'card focusable' }, [
     poster(entry.item.icon),
+    removeBtn,
     el('div', { class: 'card-progress' }, [el('div', { style: `width:${pct}%` })]),
     el('div', { class: 'label', html: escapeHtml(entry.item.name) }),
   ]);

@@ -5,9 +5,10 @@ import { navigate, reset } from '@/core/router';
 import type { Screen } from '@/core/router';
 import { Key } from '@/core/keys';
 import type { MediaItem, MediaKind } from '@/core/media';
-import { continueWatching, type ProgressEntry } from '@/core/progress';
+import { continueWatching, removeProgress, type ProgressEntry } from '@/core/progress';
 import { listFavorites } from '@/core/favorites';
 import { loadParental, setAdultEnabled, setPin } from '@/core/parental';
+import { getCategoryOrder, setCategoryOrder, applyCategoryOrder } from '@/core/category-order';
 import { el } from './dom';
 import { mediaCard, continueCard, toggleCardFavorite, escapeHtml } from './cards';
 import { openMedia } from './actions';
@@ -50,6 +51,13 @@ export function createHomeScreen(): Screen {
 
   let activeTab: Tab = 'home';
   let content: HTMLElement;
+
+  // Estado de navegación que sobrevive a volver del reproductor (misma
+  // instancia de HomeScreen, solo se vuelve a invocar render()).
+  let lastSearchTerm = '';
+  const lastCategoryByKind: Partial<Record<MediaKind, string | undefined>> = {};
+  let focusCategoryOverride: string | undefined;
+  let moveCategoryFn: ((catId: string, delta: -1 | 1) => void) | undefined;
 
   function selectTab(tab: Tab, tabEls: HTMLElement[]): void {
     activeTab = tab;
@@ -141,7 +149,21 @@ export function createHomeScreen(): Screen {
     if (hero) content.append(hero);
 
     if (watching.length) {
-      content.append(rail('Continuar viendo', watching.map((e) => continueCard(e, () => resumeEntry(e)))));
+      content.append(
+        rail(
+          'Continuar viendo',
+          watching.map((e) =>
+            continueCard(
+              e,
+              () => resumeEntry(e),
+              () => {
+                removeProgress(acctKey, e.resume);
+                void renderHome();
+              },
+            ),
+          ),
+        ),
+      );
     }
     if (favs.length) {
       content.append(rail('Favoritos', favs.map((f) => mediaCard(f, () => openMedia(f)))));
@@ -155,13 +177,16 @@ export function createHomeScreen(): Screen {
   }
 
   async function renderCatalog(kind: MediaKind): Promise<void> {
-    const cats = await library.categories(kind);
+    const rawCats = await library.categories(kind);
+    const order = getCategoryOrder(acctKey, kind);
+    const cats = applyCategoryOrder(rawCats, order);
     content.innerHTML = '';
     const grid = el('div', { class: 'cat-grid screen-scroll' });
 
     async function loadCategory(catId: string | undefined, button: HTMLElement): Promise<void> {
       content.querySelectorAll('.cat-item').forEach((b) => b.classList.remove('active'));
       button.classList.add('active');
+      lastCategoryByKind[kind] = catId;
       grid.innerHTML = '<div class="loading">Cargando…</div>';
       const items = await library.content(kind, catId);
       grid.innerHTML = '';
@@ -172,19 +197,50 @@ export function createHomeScreen(): Screen {
       grid.append(el('div', { class: 'grid' }, items.map((it) => mediaCard(it, () => openMedia(it)))));
     }
 
-    const list = el('div', { class: 'cat-list screen-scroll' });
-    cats.forEach((c, i) => {
-      const button = el('div', { class: 'cat-item focusable', html: escapeHtml(c.category_name) });
-      button.addEventListener('click', () => void loadCategory(c.category_id, button));
-      list.append(button);
-      if (i === 0) {
-        button.classList.add('active');
-        void loadCategory(c.category_id, button);
-      }
+    // Reordenar categorías (rojo/verde), con persistencia por cuenta. Solo
+    // mueve el orden y el foco; no cambia la categoría de contenido activa.
+    function moveCategory(catId: string, delta: -1 | 1): void {
+      const ids = cats.map((c) => c.category_id);
+      const from = ids.indexOf(catId);
+      const to = from + delta;
+      if (from < 0 || to < 0 || to >= ids.length) return;
+      const nextIds = [...ids];
+      nextIds.splice(from, 1);
+      nextIds.splice(to, 0, catId);
+      setCategoryOrder(acctKey, kind, nextIds);
+      focusCategoryOverride = catId;
+      void renderCatalog(kind);
+    }
+    moveCategoryFn = moveCategory;
+
+    const hint = el('div', {
+      class: 'cat-hint',
+      html: 'Rojo/Verde: mover categoría',
     });
 
-    content.append(el('div', { class: 'catalog' }, [list, grid]));
-    focusElement(list.querySelector<HTMLElement>('.cat-item'));
+    const focusCatId = focusCategoryOverride ?? lastCategoryByKind[kind];
+    focusCategoryOverride = undefined;
+
+    const list = el('div', { class: 'cat-list screen-scroll' });
+    let activeButton: HTMLElement | undefined;
+    let focusButton: HTMLElement | undefined;
+    cats.forEach((c) => {
+      const button = el('div', { class: 'cat-item focusable', html: escapeHtml(c.category_name) });
+      button.dataset.catId = c.category_id;
+      button.addEventListener('click', () => void loadCategory(c.category_id, button));
+      list.append(button);
+      if (c.category_id === lastCategoryByKind[kind]) activeButton = button;
+      if (c.category_id === focusCatId) focusButton = button;
+    });
+
+    content.append(el('div', { class: 'catalog' }, [el('div', { class: 'cat-col' }, [hint, list]), grid]));
+
+    const initial = activeButton ?? list.querySelector<HTMLElement>('.cat-item') ?? undefined;
+    if (initial) {
+      initial.classList.add('active');
+      void loadCategory(initial.dataset.catId, initial);
+    }
+    focusElement(focusButton ?? initial ?? null);
   }
 
   function renderSearch(): void {
@@ -194,11 +250,16 @@ export function createHomeScreen(): Screen {
       type: 'text',
       placeholder: 'Buscar películas, series o canales…',
     });
+    input.value = lastSearchTerm;
     const results = el('div', { class: 'cat-grid screen-scroll' });
 
     async function run(): Promise<void> {
       const q = input.value.trim();
-      if (!q) return;
+      lastSearchTerm = q;
+      if (!q) {
+        results.innerHTML = '';
+        return;
+      }
       results.innerHTML = '<div class="loading">Buscando…</div>';
       const items = await library.search(q);
       results.innerHTML = '';
@@ -224,6 +285,7 @@ export function createHomeScreen(): Screen {
     ]);
     content.append(wrap);
     focusElement(input);
+    if (lastSearchTerm) void run();
   }
 
   function renderSettings(): void {
@@ -360,6 +422,18 @@ export function createHomeScreen(): Screen {
     },
 
     onKey(keyCode) {
+      const focused = currentFocus();
+      const catId = focused?.classList.contains('cat-item') ? focused.dataset.catId : undefined;
+      if (catId && moveCategoryFn) {
+        if (keyCode === Key.ColorRed) {
+          moveCategoryFn(catId, -1);
+          return true;
+        }
+        if (keyCode === Key.ColorGreen) {
+          moveCategoryFn(catId, 1);
+          return true;
+        }
+      }
       if (keyCode === Key.ColorYellow) {
         return toggleCardFavorite(currentFocus());
       }
