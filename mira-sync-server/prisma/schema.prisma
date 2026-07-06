@@ -1,0 +1,94 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Account {
+  id            String    @id @default(uuid())
+  accountLookup String    @unique
+  createdAt     DateTime  @default(now())
+  profiles      Profile[]
+  devices       Device[]
+}
+
+model Profile {
+  id        String    @id
+  accountId String
+  nombre    String
+  avatar    String?
+  isKids    Boolean   @default(false)
+  pinHash   String?
+  pinSalt   String?
+  updatedAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  account     Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  progress    Progress[]
+  favorites   Favorite[]
+  preferences Preference[]
+
+  @@index([accountId, updatedAt])
+}
+
+model Progress {
+  id               String    @id @default(uuid())
+  profileId        String
+  canonicalKey     String
+  posicionSegundos Int       @default(0)
+  duracionTotal    Int?
+  completado       Boolean   @default(false)
+  lastWatchedAt    BigInt    @default(0)
+  updatedAt        DateTime  @default(now())
+  deviceId         String
+  deletedAt        DateTime?
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, canonicalKey])
+  @@index([profileId, updatedAt])
+}
+
+model Favorite {
+  id           String    @id @default(uuid())
+  profileId    String
+  canonicalKey String
+  createdAt    BigInt    @default(0)
+  updatedAt    DateTime  @default(now())
+  deviceId     String
+  deletedAt    DateTime?
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, canonicalKey])
+  @@index([profileId, updatedAt])
+}
+
+model Preference {
+  id             String    @id @default(uuid())
+  profileId      String
+  clave          String
+  valor          String?
+  clientUpdatedAt BigInt   @default(0)
+  updatedAt      DateTime  @default(now())
+  deviceId       String
+  deletedAt      DateTime?
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, clave])
+  @@index([profileId, updatedAt])
+}
+
+model Device {
+  id         String   @id
+  accountId  String
+  platform   String
+  secretHash String   @unique
+  lastSeenAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}

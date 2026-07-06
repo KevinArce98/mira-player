@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mira
+      POSTGRES_PASSWORD: mira
+      POSTGRES_DB: mira_sync
+    volumes:
+      - mira_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mira -d mira_sync"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://mira:mira@db:5432/mira_sync?schema=public"
+      PORT: "8787"
+      XTREAM_VALIDATE: "true"
+    ports:
+      - "8787:8787"
+
+volumes:
+  mira_pgdata:
