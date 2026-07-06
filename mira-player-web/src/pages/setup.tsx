@@ -33,7 +33,7 @@ export function SetupPage() {
         <div className="flex flex-col items-center gap-2 mb-8">
           <Tv size={48} className="text-accent" />
           <h1 className="text-3xl font-extrabold tracking-tight font-display text-fg">
-            Mira<span className="text-accent"> TV</span>
+            Mira
           </h1>
         </div>
 

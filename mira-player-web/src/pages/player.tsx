@@ -16,6 +16,9 @@ import type { Episodio } from '@/types/models';
 const SKIP_SECONDS = 10;
 const HIDE_DELAY = 3500;
 const NEXT_EPISODE_COUNTDOWN = 10;
+// Xtream no expone metadata de créditos: se aproxima mostrando el aviso
+// cuando quedan estos segundos para el final.
+const NEXT_EPISODE_LEAD_SECONDS = 30;
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -75,6 +78,9 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [nextUp, setNextUp] = useState<Episodio | null>(null);
   const [countdown, setCountdown] = useState(NEXT_EPISODE_COUNTDOWN);
+  const nextFetchAttemptedRef = useRef(false);
+  const nextEpisodeRef = useRef<Episodio | null>(null);
+  const nextUpEarlyRef = useRef(false);
 
   const isLive = content?.tipo === 'live';
 
@@ -202,11 +208,33 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
     }
   };
 
+  const ensureNextFetched = useCallback(async (): Promise<Episodio | null> => {
+    if (nextFetchAttemptedRef.current) return nextEpisodeRef.current;
+    nextFetchAttemptedRef.current = true;
+    if (!episodeId || !episode) return null;
+    const next = await getNextEpisode(contentId, episode.temporada, episode.episodio);
+    nextEpisodeRef.current = next;
+    return next;
+  }, [contentId, episode, episodeId]);
+
   const handleTimeUpdate = () => {
     const video = videoRef.current;
     if (!video) return;
     setCurrentTime(video.currentTime);
     if (!isLive) tracker.report(video.currentTime);
+    if (
+      !isLive &&
+      !nextFetchAttemptedRef.current &&
+      duration > 0 &&
+      duration - video.currentTime <= NEXT_EPISODE_LEAD_SECONDS
+    ) {
+      void ensureNextFetched().then((next) => {
+        if (next) {
+          nextUpEarlyRef.current = true;
+          setNextUp(next);
+        }
+      });
+    }
   };
 
   const handleDurationChange = () => {
@@ -218,13 +246,27 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
     tracker.flush();
     if (isLive) { navigate(-1); return; }
     await setCompleted(contentId, true, episodeId ?? null);
-    if (episodeId && episode) {
-      const next = await getNextEpisode(contentId, episode.temporada, episode.episodio);
-      if (next) {
-        setCountdown(NEXT_EPISODE_COUNTDOWN);
-        setNextUp(next);
+
+    if (nextUp) {
+      // El aviso ya estaba visible (créditos) y no se canceló: el video
+      // terminó de verdad, avanzamos ya.
+      playNext();
+      return;
+    }
+
+    const next = await ensureNextFetched();
+    if (next) {
+      if (nextUpEarlyRef.current) {
+        // El usuario ya había cerrado el aviso durante los créditos; el
+        // video terminó de verdad, avanza directo sin volver a preguntar.
+        void navigate(`/player?contentId=${contentId}&episodeId=${next.id}`, { replace: true });
         return;
       }
+      // El umbral nunca se cruzó a tiempo (p.ej. duración desconocida):
+      // fallback con countdown + opción de cancelar, como antes.
+      setCountdown(NEXT_EPISODE_COUNTDOWN);
+      setNextUp(next);
+      return;
     }
     navigate(-1);
   };
@@ -235,17 +277,23 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
   }, [nextUp, contentId, navigate]);
 
   const cancelNext = useCallback(() => {
+    if (nextUpEarlyRef.current) {
+      // Solo oculta el aviso; el video sigue reproduciéndose y avanzará solo
+      // cuando termine de verdad.
+      setNextUp(null);
+      return;
+    }
     navigate(-1);
   }, [navigate]);
 
   useEffect(() => {
-    if (!nextUp) return;
+    if (!nextUp || nextUpEarlyRef.current) return;
     const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [nextUp]);
 
   useEffect(() => {
-    if (nextUp && countdown <= 0) playNext();
+    if (nextUp && !nextUpEarlyRef.current && countdown <= 0) playNext();
   }, [nextUp, countdown, playNext]);
 
   const togglePlay = () => {
@@ -423,7 +471,7 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
 
       {nextUp ? (
         <div
-          className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/85 p-8"
+          className={`absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 p-8 ${nextUpEarlyRef.current ? 'bg-black/55' : 'bg-black/85'}`}
           onClick={(e) => e.stopPropagation()}>
           <p className="text-white/70 text-sm font-semibold uppercase tracking-widest">
             {t('player.nextEpisode')}
@@ -432,7 +480,7 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
             {`T${nextUp.temporada} · E${nextUp.episodio}${nextUp.titulo ? `  ·  ${nextUp.titulo}` : ''}`}
           </p>
           <p className="tabular-nums" style={{ color: '#D4AA7D', fontSize: 16 }}>
-            {t('player.nextIn', { seconds: countdown })}
+            {nextUpEarlyRef.current ? t('player.nextWhenReady') : t('player.nextIn', { seconds: countdown })}
           </p>
           <div className="flex items-center gap-4 mt-4">
             <button

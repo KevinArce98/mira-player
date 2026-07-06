@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listFavorites, toggleFavorite } from '@/db/repositories/favorites';
 import { queryKeys } from '@/lib/query-client';
 import { useParental } from '@/providers/parental';
+import { runSync } from '@/services/sync/engine';
 
 export function useFavorites(cuentaId: string | undefined) {
   const { filter, ready } = useParental();
@@ -18,6 +19,9 @@ export function useToggleFavorite() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (contentId: string) => toggleFavorite(contentId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.favorites }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.favorites });
+      void runSync();
+    },
   });
 }

@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router';
-import { Home, Tv, Film, Clapperboard, Search, Settings } from 'lucide-react';
+import { Home, Radio, Film, Clapperboard, Search, Settings } from 'lucide-react';
 import { useT } from '@/providers/preferences';
 
 const NAV = [
   { to: '/home', icon: Home, labelKey: 'tabs.home' },
-  { to: '/live', icon: Tv, labelKey: 'tabs.live' },
+  { to: '/live', icon: Radio, labelKey: 'tabs.live' },
   { to: '/movies', icon: Film, labelKey: 'tabs.movies' },
   { to: '/series', icon: Clapperboard, labelKey: 'tabs.series' },
   { to: '/search', icon: Search, labelKey: 'tabs.search' },
@@ -26,7 +26,7 @@ export function Sidebar() {
       <div className="px-2 md:px-5 pt-6 pb-4 overflow-hidden">
         <span className="text-2xl font-extrabold tracking-tight font-display text-fg">
           <span className="md:hidden">M</span>
-          <span className="hidden md:inline">Mira<span className="text-accent"> TV</span></span>
+          <span className="hidden md:inline">Mira</span>
         </span>
       </div>
 

@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { RefreshCw, Settings } from 'lucide-react';
 import { PlayCircle } from 'lucide-react';
 import { ContentRail, type RailItem } from '@/components/media/content-rail';
+import { ProfileSwitcherModal } from '@/components/profiles/profile-switcher-modal';
 import { Empty, Loading } from '@/components/ui/empty';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { useAccount } from '@/hooks/data/use-account';
 import { useContinueWatching, useRemoveContinueWatching } from '@/hooks/data/use-continue-watching';
 import { useFavorites } from '@/hooks/data/use-favorites';
+import { useActiveProfileId, useProfiles } from '@/hooks/data/use-profiles';
 import { useAutoSync } from '@/hooks/data/use-sync';
 import { useT } from '@/providers/preferences';
 import type { TranslationKey } from '@/lib/i18n';
@@ -28,6 +31,10 @@ export function HomePage() {
   const continueWatching = useContinueWatching(accountId);
   const removeContinue = useRemoveContinueWatching();
   const favorites = useFavorites(accountId);
+  const { data: profiles = [] } = useProfiles();
+  const { data: activeProfileId } = useActiveProfileId();
+  const activeProfile = profiles.find((p) => p.id === activeProfileId);
+  const [profilesOpen, setProfilesOpen] = useState(false);
 
   const confirmRemoveContinue = (progresoId: string, title: string) => {
     if (window.confirm(t('continueWatching.removeMessage', { title }))) {
@@ -75,6 +82,14 @@ export function HomePage() {
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <h1 className="text-xl font-bold font-display text-fg">{t('home.title')}</h1>
         <div className="flex items-center gap-4">
+          {activeProfile ? (
+            <button
+              onClick={() => setProfilesOpen(true)}
+              title={activeProfile.nombre}
+              className="w-8 h-8 rounded-full bg-tint text-on-tint flex items-center justify-center font-bold text-sm border-0 cursor-pointer shrink-0">
+              {activeProfile.nombre.slice(0, 1).toUpperCase()}
+            </button>
+          ) : null}
           <button
             onClick={() => account && sync.mutate(account)}
             disabled={sync.isPending}
@@ -88,6 +103,8 @@ export function HomePage() {
           </button>
         </div>
       </div>
+
+      <ProfileSwitcherModal visible={profilesOpen} onClose={() => setProfilesOpen(false)} />
 
       {sync.isPending ? (
         <div className="px-6 py-2 flex flex-col gap-1.5">

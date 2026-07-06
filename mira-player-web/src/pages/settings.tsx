@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router';
 import { RefreshCw, LogOut, Loader2, ChevronRight } from 'lucide-react';
 import { BlockedCategoriesModal } from '@/components/parental/blocked-categories-modal';
 import { PinModal, type PinModalMode } from '@/components/parental/pin-modal';
+import { ProfileSwitcherModal } from '@/components/profiles/profile-switcher-modal';
 import { useAccount, useAccountStatus, useDeleteAccount } from '@/hooks/data/use-account';
+import { useActiveProfileId, useProfiles } from '@/hooks/data/use-profiles';
 import { useSyncCatalog } from '@/hooks/data/use-sync';
 import { localeFor, type Language, type TranslationKey } from '@/lib/i18n';
 import { useParental } from '@/providers/parental';
@@ -39,6 +41,10 @@ export function SettingsPage() {
 
   const [pinPurpose, setPinPurpose] = useState<'enable' | 'disable' | 'manage' | null>(null);
   const [blockedOpen, setBlockedOpen] = useState(false);
+  const [profilesOpen, setProfilesOpen] = useState(false);
+  const { data: profiles = [] } = useProfiles();
+  const { data: activeProfileId } = useActiveProfileId();
+  const activeProfileName = profiles.find((p) => p.id === activeProfileId)?.nombre ?? t('common.dash');
 
   const pinMode: PinModalMode = pinPurpose === 'enable' ? 'create' : 'verify';
 
@@ -101,6 +107,19 @@ export function SettingsPage() {
           <Row label={t('settings.expires')} value={expira} />
           <Row label={t('settings.connections')} value={conexiones} />
           <Row label={t('settings.lastSync')} value={lastSync} last />
+        </div>
+
+        <SectionLabel>{t('settings.profiles')}</SectionLabel>
+        <div className="rounded-lg overflow-hidden border border-border bg-surface">
+          <button
+            onClick={() => setProfilesOpen(true)}
+            className="flex items-center justify-between w-full gap-4 px-4 py-3 border-0 bg-transparent cursor-pointer">
+            <span className="text-sm text-fg">{t('settings.profiles')}</span>
+            <span className="flex items-center gap-1 text-sm text-muted">
+              {activeProfileName}
+              <ChevronRight size={15} />
+            </span>
+          </button>
         </div>
 
         <SectionLabel>{t('settings.appearance')}</SectionLabel>
@@ -177,6 +196,7 @@ export function SettingsPage() {
         verify={parental.verifyPin}
       />
       <BlockedCategoriesModal visible={blockedOpen} onClose={() => setBlockedOpen(false)} />
+      <ProfileSwitcherModal visible={profilesOpen} onClose={() => setProfilesOpen(false)} />
     </div>
   );
 }

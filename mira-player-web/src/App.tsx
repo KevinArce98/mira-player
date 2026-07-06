@@ -1,6 +1,9 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
+
+import { runSync } from '@/services/sync/engine';
+import { ensureSyncBootstrapped } from '@/services/sync/bootstrap';
 
 import { ParentalProvider } from '@/providers/parental';
 import { PreferencesProvider } from '@/providers/preferences';
@@ -30,6 +33,15 @@ function AppLayout() {
 }
 
 export function App() {
+  useEffect(() => {
+    void ensureSyncBootstrapped().then(() => runSync());
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void runSync();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <PreferencesProvider>
