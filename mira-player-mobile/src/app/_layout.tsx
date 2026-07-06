@@ -12,12 +12,15 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { queryClient } from '@/lib/query-client';
 import { ParentalProvider } from '@/providers/parental';
 import { PreferencesProvider, usePreferences } from '@/providers/preferences';
+import { runSync } from '@/services/sync/engine';
+import { ensureSyncBootstrapped } from '@/services/sync/bootstrap';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -47,6 +50,14 @@ function ThemedNavigation({ fontsReady }: { fontsReady: boolean }) {
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
+
+  useEffect(() => {
+    void ensureSyncBootstrapped().then(() => runSync());
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void runSync();
+    });
+    return () => sub.remove();
   }, []);
 
   if (!fontsReady || !ready) return null;

@@ -20,6 +20,8 @@ export const queryKeys = {
   search: (term: string) => ['search', term] as const,
   continueWatching: ['continue-watching'] as const,
   favorites: ['favorites'] as const,
+  profiles: ['profiles'] as const,
+  activeProfile: ['active-profile'] as const,
   episodes: (serieId: string) => ['episodes', serieId] as const,
   epg: (streamId: number) => ['epg', streamId] as const,
 } as const;

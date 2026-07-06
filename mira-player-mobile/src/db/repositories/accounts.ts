@@ -2,6 +2,7 @@ import { getDatabase } from '@/db';
 import { uuid } from '@/lib/id';
 import { DEMO_SERVER } from '@/services/demo';
 import { deletePassword, savePassword } from '@/services/credentials';
+import { bootstrapSyncSession } from '@/services/sync/bootstrap';
 import type { Cuenta } from '@/types/models';
 
 export async function getAccount(): Promise<Cuenta | null> {
@@ -26,6 +27,17 @@ export async function saveAccount(input: {
     [id, input.servidor, input.usuario, existing?.ultima_sincronizacion ?? null],
   );
   await savePassword(id, input.password);
+
+  void bootstrapSyncSession({
+    servidor: input.servidor,
+    usuario: input.usuario,
+    password: input.password,
+  })
+    .then(async () => {
+      const { runSync } = await import('@/services/sync/engine');
+      await runSync();
+    })
+    .catch((err) => console.warn('[sync] bootstrap failed:', err));
 
   return {
     id,

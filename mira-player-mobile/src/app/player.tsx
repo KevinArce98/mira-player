@@ -40,6 +40,9 @@ const SYSTEM_AUDIO: SelectedTrack = { type: SelectedTrackType.SYSTEM };
 const SKIP_SECONDS = 10;
 const HIDE_DELAY = 3500;
 const NEXT_EPISODE_COUNTDOWN = 10;
+// Xtream no expone metadata de créditos: se aproxima mostrando el aviso
+// cuando quedan estos segundos para el final.
+const NEXT_EPISODE_LEAD_SECONDS = 30;
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -107,6 +110,9 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
   const [nextUp, setNextUp] = useState<Episodio | null>(null);
   const [countdown, setCountdown] = useState(NEXT_EPISODE_COUNTDOWN);
   const seekedRef = useRef(false);
+  const nextFetchAttemptedRef = useRef(false);
+  const nextEpisodeRef = useRef<Episodio | null>(null);
+  const nextUpEarlyRef = useRef(false);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -171,9 +177,31 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
     }
   };
 
+  const ensureNextFetched = useCallback(async (): Promise<Episodio | null> => {
+    if (nextFetchAttemptedRef.current) return nextEpisodeRef.current;
+    nextFetchAttemptedRef.current = true;
+    if (!episodeId || !episode) return null;
+    const next = await getNextEpisode(contentId, episode.temporada, episode.episodio);
+    nextEpisodeRef.current = next;
+    return next;
+  }, [contentId, episode, episodeId]);
+
   const onProgress = (data: OnProgressData) => {
     setCurrentTime(data.currentTime);
     if (!isLive) tracker.report(data.currentTime);
+    if (
+      !isLive &&
+      !nextFetchAttemptedRef.current &&
+      duration > 0 &&
+      duration - data.currentTime <= NEXT_EPISODE_LEAD_SECONDS
+    ) {
+      void ensureNextFetched().then((next) => {
+        if (next) {
+          nextUpEarlyRef.current = true;
+          setNextUp(next);
+        }
+      });
+    }
   };
 
   const onTextTracks = (e: OnTextTracksData) => {
@@ -203,13 +231,27 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
     }
     await setCompleted(contentId, true, episodeId ?? null);
     void recordCompletedPlayback();
-    if (episodeId && episode) {
-      const next = await getNextEpisode(contentId, episode.temporada, episode.episodio);
-      if (next) {
-        setCountdown(NEXT_EPISODE_COUNTDOWN);
-        setNextUp(next);
+
+    if (nextUp) {
+      // El aviso ya estaba visible (créditos) y no se canceló: el video
+      // terminó de verdad, avanzamos ya.
+      playNext();
+      return;
+    }
+
+    const next = await ensureNextFetched();
+    if (next) {
+      if (nextUpEarlyRef.current) {
+        // El usuario ya había cerrado el aviso durante los créditos; el
+        // video terminó de verdad, avanza directo sin volver a preguntar.
+        router.replace({ pathname: '/player', params: { contentId, episodeId: next.id } });
         return;
       }
+      // El umbral nunca se cruzó a tiempo (p.ej. duración desconocida):
+      // fallback con countdown + opción de cancelar, como antes.
+      setCountdown(NEXT_EPISODE_COUNTDOWN);
+      setNextUp(next);
+      return;
     }
     router.back();
   };
@@ -220,17 +262,23 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
   }, [nextUp, contentId]);
 
   const cancelNext = useCallback(() => {
+    if (nextUpEarlyRef.current) {
+      // Solo oculta el aviso; el video sigue reproduciéndose y avanzará solo
+      // cuando termine de verdad.
+      setNextUp(null);
+      return;
+    }
     router.back();
   }, []);
 
   useEffect(() => {
-    if (!nextUp) return;
+    if (!nextUp || nextUpEarlyRef.current) return;
     const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [nextUp]);
 
   useEffect(() => {
-    if (nextUp && countdown <= 0) playNext();
+    if (nextUp && !nextUpEarlyRef.current && countdown <= 0) playNext();
   }, [nextUp, countdown, playNext]);
 
   const togglePlay = () => {
@@ -430,12 +478,14 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
       ) : null}
 
       {nextUp ? (
-        <View style={styles.nextOverlay}>
+        <View style={[styles.nextOverlay, nextUpEarlyRef.current && styles.nextOverlayEarly]}>
           <Text style={styles.nextTitle}>{t('player.nextEpisode')}</Text>
           <Text style={styles.nextEpisodeLabel} numberOfLines={1}>
             {`T${nextUp.temporada} · E${nextUp.episodio}${nextUp.titulo ? `  ·  ${nextUp.titulo}` : ''}`}
           </Text>
-          <Text style={styles.nextCountdown}>{t('player.nextIn', { seconds: countdown })}</Text>
+          <Text style={styles.nextCountdown}>
+            {nextUpEarlyRef.current ? t('player.nextWhenReady') : t('player.nextIn', { seconds: countdown })}
+          </Text>
           <View style={styles.nextButtons}>
             <Pressable onPress={playNext} style={styles.nextPlayButton}>
               <Ionicons name="play" size={18} color="#272727" />
@@ -567,6 +617,7 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 32,
   },
+  nextOverlayEarly: { backgroundColor: 'rgba(0,0,0,0.55)' },
   nextTitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: Fonts.semibold, textTransform: 'uppercase', letterSpacing: 1 },
   nextEpisodeLabel: { color: '#fff', fontSize: 20, fontFamily: Fonts.displaySemibold, textAlign: 'center' },
   nextCountdown: { color: '#D4AA7D', fontSize: 16, fontFamily: Fonts.medium, fontVariant: ['tabular-nums'] },

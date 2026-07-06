@@ -89,6 +89,41 @@ const MIGRATIONS: string[] = [
   ALTER TABLE contenido ADD COLUMN orden INTEGER;
   CREATE INDEX idx_contenido_orden ON contenido(cuenta_id, tipo, orden);
   `,
+
+  `
+  CREATE TABLE perfiles (
+    id TEXT PRIMARY KEY NOT NULL,
+    nombre TEXT NOT NULL,
+    avatar TEXT,
+    is_kids INTEGER NOT NULL DEFAULT 0,
+    pin_hash TEXT,
+    pin_salt TEXT,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    dirty INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE sync_state (
+    clave TEXT PRIMARY KEY NOT NULL,
+    valor TEXT
+  );
+
+  ALTER TABLE progreso ADD COLUMN profile_id TEXT;
+  ALTER TABLE progreso ADD COLUMN canonical_key TEXT;
+  ALTER TABLE progreso ADD COLUMN updated_at INTEGER;
+  ALTER TABLE progreso ADD COLUMN deleted_at INTEGER;
+  ALTER TABLE progreso ADD COLUMN dirty INTEGER NOT NULL DEFAULT 1;
+  CREATE INDEX idx_progreso_profile ON progreso(profile_id);
+  CREATE INDEX idx_progreso_dirty ON progreso(dirty);
+
+  ALTER TABLE favoritos ADD COLUMN profile_id TEXT;
+  ALTER TABLE favoritos ADD COLUMN canonical_key TEXT;
+  ALTER TABLE favoritos ADD COLUMN updated_at INTEGER;
+  ALTER TABLE favoritos ADD COLUMN deleted_at INTEGER;
+  ALTER TABLE favoritos ADD COLUMN dirty INTEGER NOT NULL DEFAULT 1;
+  CREATE INDEX idx_favoritos_profile ON favoritos(profile_id);
+  CREATE INDEX idx_favoritos_dirty ON favoritos(dirty);
+  `,
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {

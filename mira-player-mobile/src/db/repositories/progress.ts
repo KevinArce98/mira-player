@@ -1,5 +1,6 @@
 import { getDatabase } from '@/db';
 import { parentalClauses, type ParentalFilter } from '@/db/repositories/content';
+import { getActiveProfileId } from '@/db/repositories/sync-meta';
 import { uuid } from '@/lib/id';
 import type { Contenido, Episodio, Progreso } from '@/types/models';
 
@@ -16,6 +17,7 @@ export async function saveProgress(update: ProgressUpdate): Promise<void> {
   const db = await getDatabase();
   const episodeId = update.episodeId ?? null;
   const now = Date.now();
+  const profileId = await getActiveProfileId();
   const completado =
     update.duracionTotal && update.duracionTotal > 0
       ? update.posicionSegundos >= update.duracionTotal * COMPLETION_RATIO
@@ -27,17 +29,19 @@ export async function saveProgress(update: ProgressUpdate): Promise<void> {
   const result = await db.runAsync(
     `UPDATE progreso
        SET posicion_segundos = ?, duracion_total = COALESCE(?, duracion_total),
-           completado = ?, last_watched_at = ?
+           completado = ?, last_watched_at = ?, updated_at = ?, deleted_at = NULL, dirty = 1,
+           profile_id = COALESCE(profile_id, ?)
      WHERE ${matchClause};`,
-    [update.posicionSegundos, update.duracionTotal ?? null, completado ? 1 : 0, now, matchParam],
+    [update.posicionSegundos, update.duracionTotal ?? null, completado ? 1 : 0, now, now, profileId, matchParam],
   );
 
   if (result.changes === 0) {
     await db.runAsync(
       `INSERT INTO progreso
-         (id, content_id, episode_id, posicion_segundos, duracion_total, completado, last_watched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?);`,
-      [uuid(), update.contentId, episodeId, update.posicionSegundos, update.duracionTotal ?? null, completado ? 1 : 0, now],
+         (id, content_id, episode_id, posicion_segundos, duracion_total, completado, last_watched_at,
+          profile_id, updated_at, deleted_at, dirty)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 1);`,
+      [uuid(), update.contentId, episodeId, update.posicionSegundos, update.duracionTotal ?? null, completado ? 1 : 0, now, profileId, now],
     );
   }
 }
@@ -49,20 +53,23 @@ export async function setCompleted(
 ): Promise<void> {
   const db = await getDatabase();
   const now = Date.now();
+  const profileId = await getActiveProfileId();
   const matchClause = episodeId === null ? 'content_id = ? AND episode_id IS NULL' : 'episode_id = ?';
   const matchParam = episodeId === null ? contentId : episodeId;
 
   const result = await db.runAsync(
-    `UPDATE progreso SET completado = ?, last_watched_at = ? WHERE ${matchClause};`,
-    [completado ? 1 : 0, now, matchParam],
+    `UPDATE progreso SET completado = ?, last_watched_at = ?, updated_at = ?, dirty = 1,
+       profile_id = COALESCE(profile_id, ?) WHERE ${matchClause};`,
+    [completado ? 1 : 0, now, now, profileId, matchParam],
   );
 
   if (result.changes === 0) {
     await db.runAsync(
       `INSERT INTO progreso
-         (id, content_id, episode_id, posicion_segundos, duracion_total, completado, last_watched_at)
-       VALUES (?, ?, ?, 0, NULL, ?, ?);`,
-      [uuid(), contentId, episodeId, completado ? 1 : 0, now],
+         (id, content_id, episode_id, posicion_segundos, duracion_total, completado, last_watched_at,
+          profile_id, updated_at, deleted_at, dirty)
+       VALUES (?, ?, ?, 0, NULL, ?, ?, ?, ?, NULL, 1);`,
+      [uuid(), contentId, episodeId, completado ? 1 : 0, now, profileId, now],
     );
   }
 }
@@ -117,7 +124,13 @@ export async function getContinueWatching(
   const extraWhere = extraClauses.length > 0 ? ` AND ${extraClauses.join(' AND ')}` : '';
   params.push(limit);
   const rows = await db.getAllAsync<Record<string, unknown>>(
-    `SELECT
+    `WITH ranked AS (
+        SELECT p.*, ROW_NUMBER() OVER (PARTITION BY p.content_id ORDER BY p.last_watched_at DESC) AS rn
+        FROM progreso p
+        WHERE p.completado = 0 AND p.posicion_segundos > 0 AND p.deleted_at IS NULL
+          AND (p.profile_id IS NULL OR p.profile_id = (SELECT valor FROM sync_state WHERE clave = 'active_profile_id'))
+     )
+     SELECT
         p.id AS p_id, p.content_id AS p_content_id, p.episode_id AS p_episode_id,
         p.posicion_segundos AS p_pos, p.duracion_total AS p_dur,
         p.completado AS p_completado, p.last_watched_at AS p_last,
@@ -125,10 +138,10 @@ export async function getContinueWatching(
         e.id AS e_id, e.serie_id AS e_serie_id, e.temporada AS e_temporada,
         e.episodio AS e_episodio, e.stream_id AS e_stream_id, e.titulo AS e_titulo,
         e.container_extension AS e_ext, e.poster_url AS e_poster, e.duracion AS e_dur
-     FROM progreso p
+     FROM ranked p
      JOIN contenido c ON c.id = p.content_id
      LEFT JOIN episodios e ON e.id = p.episode_id
-     WHERE c.cuenta_id = ? AND p.completado = 0 AND p.posicion_segundos > 0${extraWhere}
+     WHERE p.rn = 1 AND c.cuenta_id = ?${extraWhere}
      ORDER BY p.last_watched_at DESC
      LIMIT ?;`,
     params,

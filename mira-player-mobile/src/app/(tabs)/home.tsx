@@ -1,19 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ContentRail, type RailItem } from '@/components/media/content-rail';
+import { ProfileSwitcherModal } from '@/components/profiles/profile-switcher-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Empty } from '@/components/ui/empty';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { RatingPrompt } from '@/components/ui/rating-modal';
 import { ScreenTitle } from '@/components/ui/screen-title';
-import { Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useAccount } from '@/hooks/data/use-account';
 import { useContinueWatching, useRemoveContinueWatching } from '@/hooks/data/use-continue-watching';
 import { useFavorites } from '@/hooks/data/use-favorites';
+import { useActiveProfileId, useProfiles } from '@/hooks/data/use-profiles';
 import { useAutoSync } from '@/hooks/data/use-sync';
 import { useTheme } from '@/hooks/use-theme';
 import type { TranslationKey } from '@/lib/i18n';
@@ -38,6 +41,10 @@ export default function HomeScreen() {
   const continueWatching = useContinueWatching(accountId);
   const removeContinue = useRemoveContinueWatching();
   const favorites = useFavorites(accountId);
+  const { data: profiles = [] } = useProfiles();
+  const { data: activeProfileId } = useActiveProfileId();
+  const activeProfile = profiles.find((p) => p.id === activeProfileId);
+  const [profilesOpen, setProfilesOpen] = useState(false);
 
   const confirmRemoveContinue = (progresoId: string, title: string) => {
     Alert.alert(t('continueWatching.removeTitle'), t('continueWatching.removeMessage', { title }), [
@@ -84,6 +91,16 @@ export default function HomeScreen() {
           title={t('home.title')}
           right={
             <View style={styles.actions}>
+              {activeProfile ? (
+                <Pressable
+                  onPress={() => setProfilesOpen(true)}
+                  hitSlop={8}
+                  style={[styles.avatar, { backgroundColor: theme.tint }]}>
+                  <ThemedText themeColor="onTint" style={styles.avatarText}>
+                    {activeProfile.nombre.slice(0, 1).toUpperCase()}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={() => account && sync.mutate(account)}
                 disabled={sync.isPending}
@@ -100,6 +117,8 @@ export default function HomeScreen() {
             </View>
           }
         />
+
+        <ProfileSwitcherModal visible={profilesOpen} onClose={() => setProfilesOpen(false)} />
 
         {sync.isPending ? (
           <View style={styles.syncBanner}>
@@ -148,6 +167,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   actions: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
+  avatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: Fonts.bold, fontSize: 13 },
   syncBanner: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.two, gap: Spacing.one },
   syncRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   content: { paddingVertical: Spacing.three, gap: Spacing.four, flexGrow: 1 },

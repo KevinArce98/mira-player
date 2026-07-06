@@ -96,6 +96,7 @@ const es = {
   'player.error': 'Error de reproducción',
   'player.nextEpisode': 'Siguiente episodio',
   'player.nextIn': 'Se reproducirá en {seconds} s',
+  'player.nextWhenReady': 'Se reproducirá al terminar',
   'player.playNow': 'Reproducir ahora',
 
   'parental.title': 'Control parental',
@@ -145,6 +146,16 @@ const es = {
   'settings.expiresToday': '{date} (hoy)',
   'settings.expiresInDays': '{date} (en {days} días)',
   'settings.expiresInDay': '{date} (en {days} día)',
+
+  'settings.profiles': 'Perfiles',
+  'settings.profiles.subtitle': 'Cada perfil tiene su propio progreso y favoritos.',
+  'settings.profiles.newProfile': 'Nuevo perfil',
+  'settings.profiles.namePlaceholder': 'Nombre del perfil',
+  'settings.profiles.create': 'Crear perfil',
+  'settings.profiles.rename': 'Renombrar perfil',
+  'settings.profiles.deleteTitle': 'Eliminar perfil',
+  'settings.profiles.deleteMessage': 'Se eliminará "{nombre}" y su progreso y favoritos. Esta acción no se puede deshacer.',
+  'settings.profiles.cannotDeleteActive': 'Cambia a otro perfil antes de eliminar el que está activo.',
 
   'common.cancel': 'Cancelar',
   'common.delete': 'Eliminar',
@@ -251,6 +262,7 @@ const en: Dictionary = {
   'player.error': 'Playback error',
   'player.nextEpisode': 'Next episode',
   'player.nextIn': 'Playing in {seconds} s',
+  'player.nextWhenReady': 'Playing when it ends',
   'player.playNow': 'Play now',
 
   'parental.title': 'Parental controls',
@@ -300,6 +312,16 @@ const en: Dictionary = {
   'settings.expiresToday': '{date} (today)',
   'settings.expiresInDays': '{date} (in {days} days)',
   'settings.expiresInDay': '{date} (in {days} day)',
+
+  'settings.profiles': 'Profiles',
+  'settings.profiles.subtitle': 'Each profile has its own progress and favorites.',
+  'settings.profiles.newProfile': 'New profile',
+  'settings.profiles.namePlaceholder': 'Profile name',
+  'settings.profiles.create': 'Create profile',
+  'settings.profiles.rename': 'Rename profile',
+  'settings.profiles.deleteTitle': 'Delete profile',
+  'settings.profiles.deleteMessage': '"{nombre}" and its progress and favorites will be deleted. This cannot be undone.',
+  'settings.profiles.cannotDeleteActive': 'Switch to another profile before deleting the active one.',
 
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',

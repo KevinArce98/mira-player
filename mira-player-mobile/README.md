@@ -13,7 +13,7 @@ App IPTV (React Native / Expo SDK 56) que reproduce catálogos vía **Xtream Cod
 ## Empezar
 
 ```bash
-npm install
+pnpm install
 ```
 
 El reproductor usa módulos nativos, así que se necesita un **development build** (no Expo Go):

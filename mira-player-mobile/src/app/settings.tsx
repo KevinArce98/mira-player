@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { BlockedCategoriesModal } from '@/components/parental/blocked-categories-modal';
+import { ProfileSwitcherModal } from '@/components/profiles/profile-switcher-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PinModal, type PinModalMode } from '@/components/ui/pin-modal';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useAccount, useAccountStatus, useDeleteAccount } from '@/hooks/data/use-account';
+import { useActiveProfileId, useProfiles } from '@/hooks/data/use-profiles';
 import { isDemoAccount } from '@/services/demo';
 import { useSyncCatalog } from '@/hooks/data/use-sync';
 import { useTheme } from '@/hooks/use-theme';
@@ -48,6 +50,10 @@ export default function SettingsScreen() {
 
   const [pinPurpose, setPinPurpose] = useState<'enable' | 'disable' | 'manage' | null>(null);
   const [blockedOpen, setBlockedOpen] = useState(false);
+  const [profilesOpen, setProfilesOpen] = useState(false);
+  const { data: profiles = [] } = useProfiles();
+  const { data: activeProfileId } = useActiveProfileId();
+  const activeProfileName = profiles.find((p) => p.id === activeProfileId)?.nombre ?? t('common.dash');
 
   const pinMode: PinModalMode = pinPurpose === 'enable' ? 'create' : 'verify';
 
@@ -118,6 +124,21 @@ export default function SettingsScreen() {
               <Row label={t('settings.lastSync')} value={lastSync} last />
             </>
           )}
+        </View>
+
+        <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
+          {t('settings.profiles')}
+        </ThemedText>
+        <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+          <Pressable onPress={() => setProfilesOpen(true)} style={styles.row}>
+            <ThemedText type="small">{t('settings.profiles')}</ThemedText>
+            <View style={styles.rowRight}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {activeProfileName}
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+            </View>
+          </Pressable>
         </View>
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
@@ -202,6 +223,7 @@ export default function SettingsScreen() {
         verify={parental.verifyPin}
       />
       <BlockedCategoriesModal visible={blockedOpen} onClose={() => setBlockedOpen(false)} />
+      <ProfileSwitcherModal visible={profilesOpen} onClose={() => setProfilesOpen(false)} />
     </ThemedView>
   );
 }
