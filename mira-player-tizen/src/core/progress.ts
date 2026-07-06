@@ -59,3 +59,16 @@ export function removeProgress(acct: string, resume: ResumePayload): void {
   const k = progressKey(resume);
   write(acct, read(acct).filter((e) => e.key !== k));
 }
+
+export function listAllProgressEntries(acct: string): ProgressEntry[] {
+  return read(acct);
+}
+
+export function applyRemoteProgress(
+  acct: string,
+  entry: ProgressEntry,
+): void {
+  const entries = read(acct).filter((e) => e.key !== entry.key);
+  entries.unshift(entry);
+  write(acct, entries);
+}

@@ -228,3 +228,96 @@ function RemoveContinueEntry(key as String) as Void
     sec.Write("items", FormatJSON(newItems))
     sec.Flush()
 end function
+
+' --- Sincronización multi-dispositivo ---
+
+function GetDeviceId() as String
+    sec = CreateObject("roRegistrySection", "sync")
+    id = sec.Read("device_id")
+    if id <> "" then return id
+    di = CreateObject("roDeviceInfo")
+    id = di.GetRandomUUID()
+    sec.Write("device_id", id)
+    sec.Flush()
+    return id
+end function
+
+function GetSyncSecret() as String
+    sec = CreateObject("roRegistrySection", "sync")
+    return sec.Read("account_secret")
+end function
+
+sub SaveSyncSecret(secret as String) as Void
+    sec = CreateObject("roRegistrySection", "sync")
+    sec.Write("account_secret", secret)
+    sec.Flush()
+end sub
+
+sub ClearSyncSecret() as Void
+    sec = CreateObject("roRegistrySection", "sync")
+    sec.Delete("account_secret")
+    sec.Flush()
+end sub
+
+function GetActiveProfileId() as String
+    sec = CreateObject("roRegistrySection", "sync")
+    return sec.Read("active_profile_id")
+end function
+
+sub SetActiveProfileId(profileId as String) as Void
+    sec = CreateObject("roRegistrySection", "sync")
+    sec.Write("active_profile_id", profileId)
+    sec.Flush()
+end sub
+
+function GetSyncCursor() as String
+    sec = CreateObject("roRegistrySection", "sync")
+    cursor = sec.Read("cursor")
+    if cursor = "" then return "0"
+    return cursor
+end function
+
+sub SetSyncCursor(cursor as String) as Void
+    sec = CreateObject("roRegistrySection", "sync")
+    sec.Write("cursor", cursor)
+    sec.Flush()
+end sub
+
+function LoadProfiles() as Object
+    sec = CreateObject("roRegistrySection", "profiles")
+    json = sec.Read("items")
+    if json = "" then return []
+    parsed = ParseJSON(json)
+    if parsed = invalid then return []
+    return parsed
+end function
+
+sub SaveProfiles(profiles as Object) as Void
+    sec = CreateObject("roRegistrySection", "profiles")
+    sec.Write("items", FormatJSON(profiles))
+    sec.Flush()
+end sub
+
+function UpsertProfile(id as String, nombre as String) as Object
+    profiles = LoadProfiles()
+    newProfiles = []
+    found = invalid
+    for each p in profiles
+        if SafeStr(p["id"]) = id
+            p["nombre"] = nombre
+            found = p
+        end if
+        newProfiles.Push(p)
+    end for
+    if found = invalid
+        found = {id: id, nombre: nombre}
+        newProfiles.Push(found)
+    end if
+    SaveProfiles(newProfiles)
+    return found
+end function
+
+function NowEpochSeconds() as Integer
+    dt = CreateObject("roDateTime")
+    return dt.AsSeconds()
+end function

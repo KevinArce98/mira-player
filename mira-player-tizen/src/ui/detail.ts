@@ -23,6 +23,8 @@ export function createDetailScreen(series: MediaItem): Screen {
       ext: ep.container_extension || 'mp4',
       seriesId: series.id,
       title,
+      season: Number(ep.season),
+      episodeNum: Number(ep.episode_num),
     };
     const media: MediaItem = { kind: 'series', id: series.id, name: title, icon: series.icon };
     const prog = getProgress(acctKey, resume);
@@ -45,6 +47,8 @@ export function createDetailScreen(series: MediaItem): Screen {
         ext: ep.container_extension || 'mp4',
         seriesId: series.id,
         title: '',
+        season: Number(ep.season),
+        episodeNum: Number(ep.episode_num),
       });
       const pct =
         watched && watched.durationMs > 0

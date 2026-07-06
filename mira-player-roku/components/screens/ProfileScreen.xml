@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ProfileScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/source/sync.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/ProfileScreen.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+    <Rectangle width="1280" height="70" color="0x111111FF" />
+    <Label text="Perfiles" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+
+    <LabelList
+      id="profileList"
+      translation="[50, 110]"
+      numRows="8"
+      itemSize="[420, 60]"
+      itemSpacing="[0, 4]"
+      font="font:MediumBoldSystemFont"
+      color="0xCCCCCCFF"
+      focusedColor="0x1A1A1AFF"
+      focusBitmapBlendColor="0xD4AA7DFF"
+      drawFocusFeedback="true"
+    />
+
+    <Label text="OK: seleccionar perfil activo o crear uno nuevo" translation="[50, 640]" color="0x999999FF" font="font:SmallSystemFont" />
+  </children>
+</component>

@@ -1,5 +1,12 @@
 import { loadAccount, clearAccount } from '@/core/store';
 import { initSession, clearSession } from '@/core/session';
+import { ensureSyncBootstrapped } from '@/services/sync/bootstrap';
+import { runSync } from '@/services/sync/engine';
+import { isSyncConfigured } from '@/services/sync/config';
+import { getSyncSecret } from '@/services/sync/secret-store';
+import { deleteProfileRemote, pushProfile } from '@/services/sync/client';
+import { deleteProfile, listProfiles, renameProfile, upsertProfile } from '@/core/profiles';
+import { getActiveProfileId, setActiveProfileId } from '@/services/sync/sync-meta';
 import { focusFirst, focusElement, currentFocus } from '@/core/navigation';
 import { navigate, reset } from '@/core/router';
 import type { Screen } from '@/core/router';
@@ -48,6 +55,8 @@ export function createHomeScreen(): Screen {
   if (!account) return { render: () => void reset(createSetupScreen) };
   const session = initSession(account);
   const { library, acctKey } = session;
+
+  void ensureSyncBootstrapped(account, acctKey).then(() => runSync());
 
   let activeTab: Tab = 'home';
   let content: HTMLElement;
@@ -381,6 +390,88 @@ export function createHomeScreen(): Screen {
     );
 
     content.append(el('div', { class: 'settings-card' }, rows));
+
+    const profiles = listProfiles(acctKey);
+    const activeProfileId = getActiveProfileId(acctKey);
+    const profileRows = profiles.map((p) => {
+      const active = p.id === activeProfileId;
+      const row = el('div', {
+        class: 'focusable settings-row',
+        html: `<span class="settings-label">${escapeHtml(p.nombre)}</span><span class="settings-value">${active ? 'Activo' : ''}</span>`,
+      });
+      row.addEventListener('click', () => {
+        if (active) return;
+        setActiveProfileId(acctKey, p.id);
+        void runSync();
+        renderSettings();
+      });
+
+      const renameBtn = el('button', { class: 'focusable btn profile-action-btn', html: '✎' });
+      renameBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const name = window.prompt('Renombrar perfil', p.nombre)?.trim();
+        if (!name) return;
+        const updated = renameProfile(acctKey, p.id, name);
+        if (updated && isSyncConfigured()) {
+          const secret = getSyncSecret();
+          if (secret) {
+            void pushProfile(secret, updated.id, updated.nombre, { avatar: updated.avatar, isKids: updated.isKids });
+          }
+        }
+        renderSettings();
+      });
+
+      const deleteBtn = el('button', { class: 'focusable btn profile-action-btn', html: '🗑' });
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (active) {
+          window.alert('Cambia a otro perfil antes de eliminar el que está activo.');
+          return;
+        }
+        const ok = window.confirm(
+          `Se eliminará "${p.nombre}" y su progreso y favoritos. Esta acción no se puede deshacer.`,
+        );
+        if (!ok) return;
+        deleteProfile(acctKey, p.id);
+        if (isSyncConfigured()) {
+          const secret = getSyncSecret();
+          if (secret) void deleteProfileRemote(secret, p.id).catch(() => undefined);
+        }
+        renderSettings();
+      });
+
+      return el('div', { class: 'settings-row-group' }, [row, renameBtn, deleteBtn]);
+    });
+
+    const newProfileInput = el('input', { class: 'focusable', type: 'text', placeholder: 'Nombre del perfil' });
+    const addProfileBtn = el('button', { class: 'focusable btn', html: 'Crear perfil' });
+    addProfileBtn.addEventListener('click', () => {
+      const name = newProfileInput.value.trim();
+      if (!name) return;
+      const profile = upsertProfile(acctKey, { id: crypto.randomUUID(), nombre: name });
+      setActiveProfileId(acctKey, profile.id);
+      if (isSyncConfigured()) {
+        const secret = getSyncSecret();
+        if (secret) {
+          void pushProfile(secret, profile.id, profile.nombre, {
+            avatar: profile.avatar,
+            isKids: profile.isKids,
+          });
+        }
+      }
+      void runSync();
+      renderSettings();
+    });
+
+    content.append(
+      el('div', { class: 'settings-card' }, [
+        el('div', { class: 'settings-label', html: 'Perfiles' }),
+        ...profileRows,
+        el('div', { class: 'field' }, [newProfileInput]),
+        el('div', { class: 'field' }, [addProfileBtn]),
+      ]),
+    );
+
     focusFirst(content);
   }
 

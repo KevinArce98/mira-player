@@ -1,9 +1,10 @@
 sub init()
     m.navItems = [
         {label: "  Inicio",     screen: "home"},
-        {label: "  TV en vivo", screen: "LiveScreen"},
+        {label: "  En vivo",    screen: "LiveScreen"},
         {label: "  Películas",  screen: "CatalogScreen", tipo: "movie"},
         {label: "  Series",     screen: "CatalogScreen", tipo: "series"},
+        {label: "  Perfiles",   screen: "ProfileScreen"},
         {label: "  Ajustes",    screen: "SettingsScreen"},
     ]
 
@@ -50,6 +51,7 @@ sub onCredentialsSet()
     if m.top.credentials = invalid then return
     loadContinueDisplay()
     loadFavoritesDisplay()
+    RunSync(m.top)
 end sub
 
 sub onNavFocused(event as Object)
@@ -122,13 +124,25 @@ sub onContinueSelected(event as Object)
     if m.filteredContinue = invalid or idx < 0 or idx >= m.filteredContinue.Count() then return
     entry = m.filteredContinue[idx]
     creds = m.top.credentials
+    mediaKind = entry["mediaKind"]
+    if mediaKind = invalid then mediaKind = ""
+    mediaId = entry["mediaId"]
+    if mediaId = invalid then mediaId = ""
+    season = entry["season"]
+    if season = invalid then season = -1
+    episodeNum = entry["episodeNum"]
+    if episodeNum = invalid then episodeNum = -1
     m.top.navigate = {
         screen: "PlayerScreen",
         params: {
             streamUrl: SafeStr(entry["url"]),
             contentTitle: SafeStr(entry["title"]),
             posterUrl: SafeStr(entry["icon"]),
-            credentials: creds
+            credentials: creds,
+            mediaKind: SafeStr(mediaKind),
+            mediaId: SafeStr(mediaId),
+            season: season,
+            episodeNum: episodeNum
         }
     }
 end sub
@@ -211,7 +225,7 @@ sub onFavSelected(event as Object)
         url = MovieStreamUrl(creds.server, creds.username, creds.password, streamId, "mp4")
         m.top.navigate = {
             screen: "PlayerScreen",
-            params: {streamUrl: url, contentTitle: streamId, credentials: creds}
+            params: {streamUrl: url, contentTitle: streamId, credentials: creds, mediaKind: "movie", mediaId: streamId}
         }
     end if
 end sub

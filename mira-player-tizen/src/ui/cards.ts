@@ -3,6 +3,7 @@ import type { MediaItem } from '@/core/media';
 import type { ProgressEntry } from '@/core/progress';
 import { getSession } from '@/core/session';
 import { isFavorite, toggleFavorite } from '@/core/favorites';
+import { runSync } from '@/services/sync/engine';
 
 interface CardEl extends HTMLElement {
   __item?: MediaItem;
@@ -58,6 +59,7 @@ export function toggleCardFavorite(card: HTMLElement | null): boolean {
   const { acctKey } = getSession();
   const nowFav = toggleFavorite(acctKey, c.__item);
   c.__star.style.display = nowFav ? 'block' : 'none';
+  void runSync();
   return true;
 }
 

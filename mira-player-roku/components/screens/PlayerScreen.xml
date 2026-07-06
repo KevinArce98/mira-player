@@ -7,10 +7,15 @@
     <field id="posterUrl" type="string" value="" />
     <field id="episodeQueue" type="array" />
     <field id="episodeIndex" type="integer" value="-1" />
+    <field id="mediaKind" type="string" value="" />
+    <field id="mediaId" type="string" value="" />
+    <field id="season" type="integer" value="-1" />
+    <field id="episodeNum" type="integer" value="-1" />
     <field id="navigate" type="assocarray" alwaysNotify="true" />
   </interface>
   <script type="text/brightscript" uri="pkg:/source/registry.brs" />
   <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/source/sync.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/PlayerScreen.brs" />
   <children>
     <Rectangle id="bg" width="1280" height="720" color="0x000000FF" />

@@ -439,6 +439,9 @@
   opacity: 0;
   pointer-events: none;
 }
+.next-overlay.next-overlay-early {
+  background: rgba(0, 0, 0, 0.55);
+}
 .next-tag {
   font-size: 18px;
   font-weight: 700;
@@ -662,6 +665,27 @@
   height: 1px;
   background: var(--border);
   margin: 32px 0 28px;
+}
+.settings-row-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.settings-row-group .settings-row {
+  flex: 1;
+  margin-bottom: 0;
+}
+.profile-action-btn {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 22px;
+  cursor: pointer;
 }
 
 /* ---- Search wrap ---- */

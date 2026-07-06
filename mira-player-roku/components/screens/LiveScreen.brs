@@ -176,7 +176,13 @@ sub onChannelSelected(event as Object)
     url = LiveStreamUrl(creds.server, creds.username, creds.password, streamId)
     m.top.navigate = {
         screen: "PlayerScreen",
-        params: {streamUrl: url, contentTitle: SafeStr(ch["name"]), credentials: creds}
+        params: {
+            streamUrl: url,
+            contentTitle: SafeStr(ch["name"]),
+            credentials: creds,
+            mediaKind: "live",
+            mediaId: streamId
+        }
     }
 end sub
 

@@ -172,6 +172,7 @@ sub onEpisodeSelected(event as Object)
     ext = SafeStr(ep["container_extension"])
     url = SeriesStreamUrl(creds.server, creds.username, creds.password, episodeId, ext)
     title = m.top.contentData["name"] + " - Ep. " + SafeStr(ep["episode_num"])
+    seriesId = SafeStr(m.top.contentData["series_id"])
     queue = buildEpisodeQueue(m.currentSeasonIdx, idx)
     m.wentToPlayer = true
     m.top.navigate = {
@@ -182,7 +183,11 @@ sub onEpisodeSelected(event as Object)
             credentials: creds,
             posterUrl: m.poster.uri,
             episodeQueue: queue,
-            episodeIndex: 0
+            episodeIndex: 0,
+            mediaKind: "series",
+            mediaId: seriesId,
+            season: Val(m.seasonKeys[m.currentSeasonIdx]),
+            episodeNum: Val(SafeStr(ep["episode_num"]))
         }
     }
 end sub
@@ -191,6 +196,7 @@ function buildEpisodeQueue(startSeasonIdx as Integer, startEpIdx as Integer) as 
     queue = []
     creds = m.top.credentials
     seriesName = SafeStr(m.top.contentData["name"])
+    seriesId = SafeStr(m.top.contentData["series_id"])
     si = startSeasonIdx
     while si < m.seasonKeys.Count()
         epList = m.seasons[m.seasonKeys[si]]
@@ -202,7 +208,13 @@ function buildEpisodeQueue(startSeasonIdx as Integer, startEpIdx as Integer) as 
             ext = SafeStr(ep["container_extension"])
             url = SeriesStreamUrl(creds.server, creds.username, creds.password, episodeId, ext)
             title = seriesName + " - Ep. " + SafeStr(ep["episode_num"])
-            queue.Push({title: title, url: url})
+            queue.Push({
+                title: title,
+                url: url,
+                seriesId: seriesId,
+                season: Val(m.seasonKeys[si]),
+                episodeNum: Val(SafeStr(ep["episode_num"]))
+            })
             ei = ei + 1
         end while
         si = si + 1
@@ -297,7 +309,14 @@ sub playContent()
     m.wentToPlayer = true
     m.top.navigate = {
         screen: "PlayerScreen",
-        params: {streamUrl: url, contentTitle: SafeStr(item["name"]), credentials: creds, posterUrl: m.poster.uri}
+        params: {
+            streamUrl: url,
+            contentTitle: SafeStr(item["name"]),
+            credentials: creds,
+            posterUrl: m.poster.uri,
+            mediaKind: "movie",
+            mediaId: streamId
+        }
     }
 end sub
 
@@ -308,6 +327,7 @@ sub toggleFav()
     isFav = ToggleFavorite(id, m.top.contentType, item)
     m.favBtnLabel.text = iif(isFav, "Favorito (si)", "Favorito")
     m.favBtnLabel.color = iif(isFav, "0xD4AA7DFF", "0xFFFFFFFF")
+    RunSync(m.top)
 end sub
 
 function getContentId(item as Object) as String

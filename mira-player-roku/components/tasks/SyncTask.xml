@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SyncTask" extends="Task">
+  <interface>
+    <field id="credentials" type="assocarray" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/source/sync.brs" />
+  <script type="text/brightscript" uri="pkg:/components/tasks/SyncTask.brs" />
+</component>

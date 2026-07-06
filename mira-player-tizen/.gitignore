@@ -6,3 +6,6 @@ dist/
 .DS_Store
 
 .wgt-build/
+Debug/
+Release/
+tizen_web_project.yaml

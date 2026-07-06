@@ -8,6 +8,7 @@
   </interface>
   <script type="text/brightscript" uri="pkg:/source/registry.brs" />
   <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/source/sync.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/DetailScreen.brs" />
   <children>
     <Rectangle width="1280" height="720" color="0x1A1A1AFF" />

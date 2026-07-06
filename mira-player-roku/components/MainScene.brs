@@ -20,6 +20,10 @@ sub pushScreen(screenName as String, params as Object)
     if params.DoesExist("episodeQueue") then screen.episodeQueue = params.episodeQueue
     if params.DoesExist("episodeIndex") then screen.episodeIndex = params.episodeIndex
     if params.DoesExist("streamUrl") then screen.streamUrl = params.streamUrl
+    if params.DoesExist("mediaKind") then screen.mediaKind = params.mediaKind
+    if params.DoesExist("mediaId") then screen.mediaId = params.mediaId
+    if params.DoesExist("season") then screen.season = params.season
+    if params.DoesExist("episodeNum") then screen.episodeNum = params.episodeNum
 
     m.top.AppendChild(screen)
     m.screenStack.Push(screen)

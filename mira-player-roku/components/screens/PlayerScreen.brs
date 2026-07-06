@@ -204,6 +204,9 @@ sub playNextEpisode()
     nextEp = m.top.episodeQueue[nextIdx]
     m.top.episodeIndex = nextIdx
     m.top.contentTitle = SafeStr(nextEp["title"])
+    m.top.mediaId = SafeStr(nextEp["seriesId"])
+    m.top.season = nextEp["season"]
+    m.top.episodeNum = nextEp["episodeNum"]
     m.top.streamUrl = SafeStr(nextEp["url"])
 end sub
 
@@ -241,7 +244,13 @@ sub progressSave()
         key: key,
         title: m.top.contentTitle,
         url: m.top.streamUrl,
-        icon: m.top.posterUrl
+        icon: m.top.posterUrl,
+        mediaKind: m.top.mediaKind,
+        mediaId: m.top.mediaId,
+        season: m.top.season,
+        episodeNum: m.top.episodeNum,
+        durationSecs: int(m.totalDuration),
+        updatedAt: NowEpochSeconds()
     })
 end sub
 
@@ -263,6 +272,17 @@ sub progressClear()
 end sub
 
 function progressKey() as String
+    kind = m.top.mediaKind
+    id = m.top.mediaId
+    if kind <> "" and id <> ""
+        if kind = "series"
+            return "series:" + id + ":" + m.top.season.ToStr() + ":" + m.top.episodeNum.ToStr()
+        end if
+        return kind + ":" + id
+    end if
+    ' Fallback legacy (contenido reproducido antes de tener mediaKind/mediaId):
+    ' se mantiene por título para no romper el resume de entradas ya guardadas,
+    ' pero no participa en el sync (canonicalKey inválido para el backend).
     title = lcase(m.top.contentTitle)
     if title = "" then return ""
     validChars = "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -336,6 +356,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     if key = "back"
         if not m.isLive and m.didPlay
             progressSave()
+            RunSync()
         end if
         m.progressTimer.control = "stop"
         m.bufferTimer.control = "stop"
