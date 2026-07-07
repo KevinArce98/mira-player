@@ -8,7 +8,7 @@ import { Empty, Loading } from '@/components/ui/empty';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { useAccount } from '@/hooks/data/use-account';
 import { useContinueWatching, useRemoveContinueWatching } from '@/hooks/data/use-continue-watching';
-import { useFavorites } from '@/hooks/data/use-favorites';
+import { useFavorites, useToggleFavorite } from '@/hooks/data/use-favorites';
 import { useActiveProfileId, useProfiles } from '@/hooks/data/use-profiles';
 import { useAutoSync } from '@/hooks/data/use-sync';
 import { useT } from '@/providers/preferences';
@@ -31,6 +31,7 @@ export function HomePage() {
   const continueWatching = useContinueWatching(accountId);
   const removeContinue = useRemoveContinueWatching();
   const favorites = useFavorites(accountId);
+  const toggleFavorite = useToggleFavorite();
   const { data: profiles = [] } = useProfiles();
   const { data: activeProfileId } = useActiveProfileId();
   const activeProfile = profiles.find((p) => p.id === activeProfileId);
@@ -72,6 +73,9 @@ export function HomePage() {
     posterUrl: c.poster_url,
     onPress: () =>
       void navigate(c.tipo === 'live' ? `/player?contentId=${c.id}` : `/content/${c.id}`),
+    onRemove: () => toggleFavorite.mutate(c.id),
+    removeLabel: t('favorites.removeTitle'),
+    removeIcon: 'heart',
   }));
 
   const empty = continueItems.length === 0 && favoriteItems.length === 0;

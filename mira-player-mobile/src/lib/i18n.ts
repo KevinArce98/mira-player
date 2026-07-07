@@ -118,6 +118,7 @@ const es = {
 
   'continueWatching.removeTitle': 'Quitar de Continuar viendo',
   'continueWatching.removeMessage': '¿Quitar "{title}" de Continuar viendo?',
+  'favorites.removeTitle': 'Quitar de Favoritos',
 
   'settings.title': 'Ajustes',
   'settings.server': 'Servidor',
@@ -284,6 +285,7 @@ const en: Dictionary = {
 
   'continueWatching.removeTitle': 'Remove from Continue watching',
   'continueWatching.removeMessage': 'Remove "{title}" from Continue watching?',
+  'favorites.removeTitle': 'Remove from Favorites',
 
   'settings.title': 'Settings',
   'settings.server': 'Server',

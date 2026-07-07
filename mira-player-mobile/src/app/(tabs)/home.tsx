@@ -15,7 +15,7 @@ import { ScreenTitle } from '@/components/ui/screen-title';
 import { Fonts, Spacing } from '@/constants/theme';
 import { useAccount } from '@/hooks/data/use-account';
 import { useContinueWatching, useRemoveContinueWatching } from '@/hooks/data/use-continue-watching';
-import { useFavorites } from '@/hooks/data/use-favorites';
+import { useFavorites, useToggleFavorite } from '@/hooks/data/use-favorites';
 import { useActiveProfileId, useProfiles } from '@/hooks/data/use-profiles';
 import { useAutoSync } from '@/hooks/data/use-sync';
 import { useTheme } from '@/hooks/use-theme';
@@ -41,6 +41,7 @@ export default function HomeScreen() {
   const continueWatching = useContinueWatching(accountId);
   const removeContinue = useRemoveContinueWatching();
   const favorites = useFavorites(accountId);
+  const toggleFavorite = useToggleFavorite();
   const { data: profiles = [] } = useProfiles();
   const { data: activeProfileId } = useActiveProfileId();
   const activeProfile = profiles.find((p) => p.id === activeProfileId);
@@ -70,7 +71,8 @@ export default function HomeScreen() {
       posterUrl: episodio?.poster_url ?? contenido.poster_url,
       progress: fraction,
       onPress: () => playContent(contenido.id, episodio?.id),
-      onLongPress: () => confirmRemoveContinue(progreso.id, contenido.nombre),
+      onRemove: () => confirmRemoveContinue(progreso.id, contenido.nombre),
+      removeLabel: t('continueWatching.removeTitle'),
     };
   });
 
@@ -80,6 +82,9 @@ export default function HomeScreen() {
     subtitle: c.categoria,
     posterUrl: c.poster_url,
     onPress: () => openContent(c),
+    onRemove: () => toggleFavorite.mutate(c.id),
+    removeLabel: t('favorites.removeTitle'),
+    removeIcon: 'heart',
   }));
 
   const empty = continueItems.length === 0 && favoriteItems.length === 0;

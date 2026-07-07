@@ -12,6 +12,9 @@ export interface RailItem {
   progress?: number;
   onPress?: () => void;
   onLongPress?: () => void;
+  onRemove?: () => void;
+  removeLabel?: string;
+  removeIcon?: 'x' | 'heart';
 }
 
 export function ContentRail({
@@ -47,6 +50,9 @@ export function ContentRail({
             width={cardWidth}
             onPress={item.onPress}
             onLongPress={item.onLongPress}
+            onRemove={item.onRemove}
+            removeLabel={item.removeLabel}
+            removeIcon={item.removeIcon}
           />
         )}
       />

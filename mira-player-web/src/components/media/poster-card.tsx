@@ -1,4 +1,4 @@
-import { ImageOff, X } from 'lucide-react';
+import { Heart, ImageOff, X } from 'lucide-react';
 import { ProgressBar } from '@/components/ui/progress-bar';
 
 interface PosterCardProps {
@@ -11,6 +11,7 @@ interface PosterCardProps {
   onPress?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
+  removeIcon?: 'x' | 'heart';
 }
 
 export function PosterCard({
@@ -23,12 +24,13 @@ export function PosterCard({
   onPress,
   onRemove,
   removeLabel,
+  removeIcon = 'x',
 }: PosterCardProps) {
   return (
     <div
       style={{ width: width ? `${width}px` : '100%', cursor: onPress ? 'pointer' : 'default' }}
       onClick={onPress}
-      className="flex flex-col gap-1 group">
+      className="flex flex-col gap-1">
       <div
         style={{ aspectRatio: `${1} / ${1 / aspectRatio}` }}
         className="bg-surface border border-border rounded-md overflow-hidden relative flex items-center justify-center">
@@ -40,8 +42,8 @@ export function PosterCard({
             }}
             title={removeLabel}
             aria-label={removeLabel}
-            className="absolute top-1 right-1 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white border-0 cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
-            <X size={14} />
+            className="absolute top-1 right-1 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white border-0 cursor-pointer">
+            {removeIcon === 'heart' ? <Heart size={14} fill="currentColor" /> : <X size={14} />}
           </button>
         ) : null}
         {posterUrl ? (

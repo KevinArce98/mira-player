@@ -9,6 +9,7 @@ export interface RailItem {
   onPress?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
+  removeIcon?: 'x' | 'heart';
 }
 
 export function ContentRail({
@@ -33,6 +34,7 @@ export function ContentRail({
               onPress={item.onPress}
               onRemove={item.onRemove}
               removeLabel={item.removeLabel}
+              removeIcon={item.removeIcon}
             />
           </div>
         ))}

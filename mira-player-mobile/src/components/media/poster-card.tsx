@@ -16,6 +16,9 @@ export interface PosterCardProps {
   width: number;
   onPress?: () => void;
   onLongPress?: () => void;
+  onRemove?: () => void;
+  removeLabel?: string;
+  removeIcon?: 'x' | 'heart';
 }
 
 export function PosterCard({
@@ -27,6 +30,9 @@ export function PosterCard({
   width,
   onPress,
   onLongPress,
+  onRemove,
+  removeLabel,
+  removeIcon = 'x',
 }: PosterCardProps) {
   const theme = useTheme();
   return (
@@ -51,6 +57,19 @@ export function PosterCard({
             <ProgressBar value={progress} />
           </View>
         ) : null}
+        {onRemove ? (
+          <Pressable
+            onPress={onRemove}
+            hitSlop={8}
+            accessibilityLabel={removeLabel}
+            style={styles.removeButton}>
+            <Ionicons
+              name={removeIcon === 'heart' ? 'heart' : 'close'}
+              size={14}
+              color="#fff"
+            />
+          </Pressable>
+        ) : null}
       </View>
       <ThemedText type="small" numberOfLines={1} style={styles.title}>
         {title}
@@ -66,6 +85,17 @@ export function PosterCard({
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
+  removeButton: {
+    position: 'absolute',
+    top: Spacing.one,
+    right: Spacing.one,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
   posterWrap: {
     width: '100%',
     borderRadius: Spacing.two,
