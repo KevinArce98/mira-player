@@ -36,6 +36,12 @@ profileRoutes.post('/', async (c) => {
     return c.json({ error: 'missing_fields' }, 400);
   }
 
+  const existing = await prisma.profile.findUnique({ where: { id: body.id }, select: { accountId: true } });
+  if (existing && existing.accountId !== accountId) {
+    logWarn('profiles.create.forbidden', { accountId, profileId: body.id, ownerAccountId: existing.accountId });
+    return c.json({ error: 'forbidden' }, 403);
+  }
+
   const profile = await prisma.profile.upsert({
     where: { id: body.id },
     create: {
@@ -56,10 +62,6 @@ profileRoutes.post('/', async (c) => {
       updatedAt: new Date(),
     },
   });
-  if (profile.accountId !== accountId) {
-    logWarn('profiles.create.forbidden', { accountId, profileId: body.id, ownerAccountId: profile.accountId });
-    return c.json({ error: 'forbidden' }, 403);
-  }
   logInfo('profiles.create.ok', { accountId, profileId: profile.id, nombre: profile.nombre });
   return c.json({ profile });
 });
