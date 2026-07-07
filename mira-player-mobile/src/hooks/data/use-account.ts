@@ -61,7 +61,7 @@ export function useSaveAccount() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.account });
-      qc.invalidateQueries({ queryKey: REAUTH_QUERY_KEY });
+      qc.setQueryData(REAUTH_QUERY_KEY, false);
     },
   });
 }
@@ -76,7 +76,7 @@ export function useSaveDemoAccount() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.account });
-      qc.invalidateQueries({ queryKey: REAUTH_QUERY_KEY });
+      qc.setQueryData(REAUTH_QUERY_KEY, false);
     },
   });
 }

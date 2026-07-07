@@ -140,7 +140,8 @@ sub onVideoState()
         end if
         if m.didPlay
             progressClear()
-            RemoveContinueEntry(progressKey())
+            markCompleted()
+            RunSync(m.top)
             if hasNextEpisode()
                 showNextOverlay()
                 return
@@ -200,6 +201,9 @@ end sub
 sub playNextEpisode()
     hideNextOverlay()
     if not hasNextEpisode() then return
+    progressClear()
+    markCompleted()
+    RunSync(m.top)
     nextIdx = m.top.episodeIndex + 1
     nextEp = m.top.episodeQueue[nextIdx]
     m.top.episodeIndex = nextIdx
@@ -250,7 +254,8 @@ sub progressSave()
         season: m.top.season,
         episodeNum: m.top.episodeNum,
         durationSecs: int(m.totalDuration),
-        updatedAt: NowEpochSeconds()
+        updatedAt: NowEpochMs(),
+        completado: false
     })
 end sub
 
@@ -269,6 +274,29 @@ sub progressClear()
     sec = CreateObject("roRegistrySection", "progress")
     sec.Delete(key)
     sec.Flush()
+end sub
+
+' Marca como visto sin depender de la posición (fin natural del video o salto
+' al siguiente episodio). Se mantiene en "continuar" (no se borra) para que
+' HomeScreen lo filtre de la lista Y para que el push de sync reporte
+' completado:true a otros dispositivos.
+sub markCompleted()
+    if m.isLive then return
+    key = progressKey()
+    if key = "" then return
+    SaveContinueEntry({
+        key: key,
+        title: m.top.contentTitle,
+        url: m.top.streamUrl,
+        icon: m.top.posterUrl,
+        mediaKind: m.top.mediaKind,
+        mediaId: m.top.mediaId,
+        season: m.top.season,
+        episodeNum: m.top.episodeNum,
+        durationSecs: int(m.totalDuration),
+        updatedAt: NowEpochMs(),
+        completado: true
+    })
 end sub
 
 function progressKey() as String
@@ -356,7 +384,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     if key = "back"
         if not m.isLive and m.didPlay
             progressSave()
-            RunSync()
+            RunSync(m.top)
         end if
         m.progressTimer.control = "stop"
         m.bufferTimer.control = "stop"

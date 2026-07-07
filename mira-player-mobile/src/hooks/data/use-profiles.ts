@@ -4,7 +4,7 @@ import { createProfile, deleteProfile, listProfiles, renameProfile } from '@/db/
 import { ensureDefaultProfile, getActiveProfileId, setActiveProfileId } from '@/db/repositories/sync-meta';
 import { queryKeys } from '@/lib/query-client';
 import { isSyncConfigured } from '@/services/sync/config';
-import { runSync } from '@/services/sync/engine';
+import { requestSync } from '@/services/sync/engine';
 import { getSyncSecret } from '@/services/sync/secret-store';
 import { deleteProfileRemote, pushProfile } from '@/services/sync/client';
 
@@ -94,7 +94,7 @@ export function useSwitchProfile() {
       qc.invalidateQueries({ queryKey: queryKeys.activeProfile });
       qc.invalidateQueries({ queryKey: queryKeys.continueWatching });
       qc.invalidateQueries({ queryKey: queryKeys.favorites });
-      void runSync();
+      requestSync();
     },
   });
 }

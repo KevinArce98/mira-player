@@ -79,7 +79,11 @@ sub onNavSelected(event as Object)
 end sub
 
 sub loadContinueDisplay()
-    items = LoadContinueList()
+    all = LoadContinueList()
+    items = []
+    for each entry in all
+        if entry["completado"] <> true then items.Push(entry)
+    end for
     m.filteredContinue = items
 
     if items.Count() = 0

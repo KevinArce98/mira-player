@@ -4,7 +4,14 @@ export interface ResolveResult {
   accountId: string;
   deviceId: string;
   accountSecret: string;
-  profiles: { id: string; nombre: string; avatar: string | null; isKids: boolean; hasPin: boolean }[];
+  profiles: {
+    id: string;
+    nombre: string;
+    avatar: string | null;
+    isKids: boolean;
+    isDefault: boolean;
+    hasPin: boolean;
+  }[];
 }
 
 export interface PushProgress {

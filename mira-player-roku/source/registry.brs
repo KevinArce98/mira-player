@@ -317,7 +317,19 @@ function UpsertProfile(id as String, nombre as String) as Object
     return found
 end function
 
-function NowEpochSeconds() as Integer
+sub DeleteLocalProfile(id as String) as Void
+    profiles = LoadProfiles()
+    newProfiles = []
+    for each p in profiles
+        if SafeStr(p["id"]) <> id then newProfiles.Push(p)
+    end for
+    SaveProfiles(newProfiles)
+end sub
+
+' Epoch en milisegundos (LongInteger: segundos*1000 desborda un Integer de 32
+' bits). Usado solo para timestamps de sync (lastWatchedAt/createdAt), que en
+' el resto de plataformas (web/mobile/tizen) y el servidor son siempre ms.
+function NowEpochMs() as LongInteger
     dt = CreateObject("roDateTime")
-    return dt.AsSeconds()
+    return dt.AsSeconds() * 1000&
 end function

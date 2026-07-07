@@ -3,7 +3,7 @@ import { Key, isBack } from '@/core/keys';
 import { back, replace } from '@/core/router';
 import type { Screen } from '@/core/router';
 import { getSession } from '@/core/session';
-import { saveProgress } from '@/core/progress';
+import { completeProgress, saveProgress } from '@/core/progress';
 import { runSync } from '@/services/sync/engine';
 import type { MediaItem, ResumePayload } from '@/core/media';
 import { el } from './dom';
@@ -173,6 +173,7 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     const info = pendingNext;
     stopNextCountdown();
     if (!info) return;
+    completeProgress(acctKey, opts.media, opts.resume);
     await replace(() => createPlayerScreen({ title: info.title, media: info.media, resume: info.resume }));
   }
 

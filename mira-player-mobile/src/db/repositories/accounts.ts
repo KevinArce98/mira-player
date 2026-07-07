@@ -2,7 +2,6 @@ import { getDatabase } from '@/db';
 import { uuid } from '@/lib/id';
 import { DEMO_SERVER } from '@/services/demo';
 import { deletePassword, savePassword } from '@/services/credentials';
-import { bootstrapSyncSession } from '@/services/sync/bootstrap';
 import { markReauthDone } from '@/services/session-reauth';
 import type { Cuenta } from '@/types/models';
 
@@ -30,16 +29,16 @@ export async function saveAccount(input: {
   await savePassword(id, input.password);
   await markReauthDone();
 
-  void bootstrapSyncSession({
-    servidor: input.servidor,
-    usuario: input.usuario,
-    password: input.password,
-  })
-    .then(async () => {
-      const { runSync } = await import('@/services/sync/engine');
-      await runSync();
-    })
-    .catch((err) => console.warn('[sync] bootstrap failed:', err));
+  void (async () => {
+    const { bootstrapSyncSession } = await import('@/services/sync/bootstrap');
+    await bootstrapSyncSession({
+      servidor: input.servidor,
+      usuario: input.usuario,
+      password: input.password,
+    });
+    const { runSync } = await import('@/services/sync/engine');
+    await runSync();
+  })().catch((err) => console.warn('[sync] bootstrap failed:', err));
 
   return {
     id,

@@ -82,7 +82,7 @@ async function pushAll(secret: string, profileId: string, acctKey: string): Prom
     canonicalKey: progressKey(e.resume),
     posicionSegundos: Math.round(e.positionMs / 1000),
     duracionTotal: e.durationMs > 0 ? Math.round(e.durationMs / 1000) : null,
-    completado: false,
+    completado: Boolean(e.completado),
     lastWatchedAt: e.updatedAt,
     deletedAt: null,
   }));
@@ -126,44 +126,93 @@ async function pullAndApply(
   const since = getCursor(profileId);
   const result = await pull(secret, profileId, since);
 
+  let allResolved = true;
   for (const item of result.progress) {
-    await applyPulledProgress(acctKey, session, item).catch(() => undefined);
+    if (!(await applyPulledProgress(acctKey, session, item))) allResolved = false;
   }
   for (const item of result.favorites) {
-    await applyPulledFavorite(acctKey, session, item).catch(() => undefined);
+    if (!(await applyPulledFavorite(acctKey, session, item))) allResolved = false;
   }
 
-  setCursor(profileId, result.cursor);
+  if (allResolved) {
+    setCursor(profileId, result.cursor);
+  } else {
+    console.warn('[sync] some pulled items could not resolve to local content, will retry next sync');
+  }
 }
 
-async function applyPulledFavorite(acctKey: string, session: Session, item: PushFavorite): Promise<void> {
+async function applyPulledFavorite(acctKey: string, session: Session, item: PushFavorite): Promise<boolean> {
   const parsed = parseKey(item.canonicalKey);
-  if (!parsed) return;
+  if (!parsed) return false;
 
   const kind = parsed.kind === 'series' ? 'series' : parsed.kind;
   const id = parsed.kind === 'series' ? parsed.seriesId : parsed.id;
-  const list = await session.library.all(kind);
-  const mediaItem = list.find((i) => i.id === id);
-  if (!mediaItem) return;
+  try {
+    const list = await session.library.all(kind);
+    const mediaItem = list.find((i) => i.id === id);
+    if (!mediaItem) return false;
 
-  applyRemoteFavorite(acctKey, mediaItem, item.createdAt, item.deletedAt);
+    applyRemoteFavorite(acctKey, mediaItem, item.createdAt, item.deletedAt);
+    return true;
+  } catch (err) {
+    console.warn('[sync] failed to resolve favorite', item.canonicalKey, err);
+    return false;
+  }
 }
 
-async function applyPulledProgress(acctKey: string, session: Session, item: PushProgress): Promise<void> {
+async function applyPulledProgress(acctKey: string, session: Session, item: PushProgress): Promise<boolean> {
   const parsed = parseKey(item.canonicalKey);
-  if (!parsed || parsed.kind === 'live') return;
+  if (!parsed) return false;
+  if (parsed.kind === 'live') return true;
 
   const positionMs = item.posicionSegundos * 1000;
   const durationMs = (item.duracionTotal ?? 0) * 1000;
 
-  if (parsed.kind === 'movie') {
-    const list = await session.library.all('movie');
-    const mediaItem = list.find((i) => i.id === parsed.id);
-    if (!mediaItem) return;
+  try {
+    if (parsed.kind === 'movie') {
+      const list = await session.library.all('movie');
+      const mediaItem = list.find((i) => i.id === parsed.id);
+      if (!mediaItem) return false;
+      const resume: ResumePayload = {
+        kind: 'movie',
+        streamId: parsed.id,
+        ext: mediaItem.containerExtension || 'mp4',
+      };
+      applyRemoteProgress(acctKey, {
+        key: progressKey(resume),
+        item: mediaItem,
+        resume,
+        positionMs,
+        durationMs,
+        updatedAt: item.lastWatchedAt,
+        completado: item.completado,
+      });
+      return true;
+    }
+
+    if (parsed.season == null || parsed.episodeNum == null) return true;
+    const info = await session.client.seriesInfo(parsed.seriesId);
+    const seasonEps = info.episodes[String(parsed.season)] ?? [];
+    const ep = seasonEps.find((e) => Number(e.episode_num) === parsed.episodeNum);
+    if (!ep) return false;
+
+    const seriesList = await session.library.all('series');
+    const seriesItem = seriesList.find((i) => i.id === parsed.seriesId);
+    const title = `${seriesItem?.name ?? info.info.name ?? ''} — ${ep.title}`;
     const resume: ResumePayload = {
-      kind: 'movie',
-      streamId: parsed.id,
-      ext: mediaItem.containerExtension || 'mp4',
+      kind: 'series',
+      episodeId: ep.id,
+      ext: ep.container_extension || 'mp4',
+      seriesId: parsed.seriesId,
+      title,
+      season: parsed.season,
+      episodeNum: parsed.episodeNum,
+    };
+    const mediaItem: MediaItem = {
+      kind: 'series',
+      id: parsed.seriesId,
+      name: title,
+      icon: seriesItem?.icon ?? null,
     };
     applyRemoteProgress(acctKey, {
       key: progressKey(resume),
@@ -172,42 +221,13 @@ async function applyPulledProgress(acctKey: string, session: Session, item: Push
       positionMs,
       durationMs,
       updatedAt: item.lastWatchedAt,
+      completado: item.completado,
     });
-    return;
+    return true;
+  } catch (err) {
+    console.warn('[sync] failed to resolve progress', item.canonicalKey, err);
+    return false;
   }
-
-  if (parsed.season == null || parsed.episodeNum == null) return;
-  const info = await session.client.seriesInfo(parsed.seriesId);
-  const seasonEps = info.episodes[String(parsed.season)] ?? [];
-  const ep = seasonEps.find((e) => Number(e.episode_num) === parsed.episodeNum);
-  if (!ep) return;
-
-  const seriesList = await session.library.all('series');
-  const seriesItem = seriesList.find((i) => i.id === parsed.seriesId);
-  const title = `${seriesItem?.name ?? info.info.name ?? ''} — ${ep.title}`;
-  const resume: ResumePayload = {
-    kind: 'series',
-    episodeId: ep.id,
-    ext: ep.container_extension || 'mp4',
-    seriesId: parsed.seriesId,
-    title,
-    season: parsed.season,
-    episodeNum: parsed.episodeNum,
-  };
-  const mediaItem: MediaItem = {
-    kind: 'series',
-    id: parsed.seriesId,
-    name: title,
-    icon: seriesItem?.icon ?? null,
-  };
-  applyRemoteProgress(acctKey, {
-    key: progressKey(resume),
-    item: mediaItem,
-    resume,
-    positionMs,
-    durationMs,
-    updatedAt: item.lastWatchedAt,
-  });
 }
 
 async function recoverFromInvalidSecret(acctKey: string): Promise<void> {

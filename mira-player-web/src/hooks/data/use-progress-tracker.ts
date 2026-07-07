@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { saveProgress } from '@/db/repositories/progress';
-import { runSync } from '@/services/sync/engine';
+import { requestSync } from '@/services/sync/engine';
 import { queryKeys } from '@/lib/query-client';
 
 const THROTTLE_MS = 12_000;
@@ -46,7 +46,7 @@ export function useProgressTracker(target: ProgressTarget) {
   const flush = useCallback(() => {
     if (pendingPosRef.current != null) {
       void persist(pendingPosRef.current).then(() => {
-        void runSync();
+        requestSync();
       });
     }
   }, [persist]);

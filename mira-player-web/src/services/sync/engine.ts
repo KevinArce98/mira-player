@@ -9,6 +9,7 @@ import { deleteSyncSecret, getSyncSecret } from './secret-store';
 import { isSyncConfigured } from './config';
 import { parseCanonicalKey } from './keys';
 import { fetchProfiles, pull, push, type PushFavorite, type PushProgress } from './client';
+import { loadSeriesEpisodes } from '@/services/series';
 
 function isUnauthorized(err: unknown): boolean {
   return typeof err === 'object' && err !== null && (err as { status?: number }).status === 401;
@@ -37,9 +38,22 @@ interface DirtyFavoriteRow {
 }
 
 let running = false;
+let rerunRequested = false;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function requestSync(delayMs = 1500): void {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    debounceTimer = null;
+    void runSync();
+  }, delayMs);
+}
 
 export async function runSync(): Promise<{ ok: boolean; reason?: string }> {
-  if (running) return { ok: false, reason: 'busy' };
+  if (running) {
+    rerunRequested = true;
+    return { ok: false, reason: 'busy' };
+  }
   if (!isSyncConfigured()) return { ok: false, reason: 'not_configured' };
 
   const secret = await getSyncSecret();
@@ -47,19 +61,32 @@ export async function runSync(): Promise<{ ok: boolean; reason?: string }> {
   if (!secret || !profileId) return { ok: false, reason: 'no_session' };
 
   running = true;
+  rerunRequested = false;
+  const errors: unknown[] = [];
   try {
-    await pushDirty(secret, profileId);
-    await pullProfiles(secret);
-    await pullAndApply(secret, profileId);
-    return { ok: true };
-  } catch (err) {
-    console.warn('[sync] runSync failed:', err);
-    if (isUnauthorized(err)) {
+    try {
+      await pushDirty(secret, profileId);
+    } catch (err) {
+      errors.push(err);
+    }
+    try {
+      await pullProfiles(secret);
+      await pullAndApply(secret, profileId);
+    } catch (err) {
+      errors.push(err);
+    }
+
+    if (errors.some(isUnauthorized)) {
       await recoverFromInvalidSecret();
     }
-    return { ok: false, reason: (err as Error).message };
+    if (errors.length > 0) {
+      console.warn('[sync] runSync completed with errors:', errors);
+      return { ok: false, reason: (errors[0] as Error).message };
+    }
+    return { ok: true };
   } finally {
     running = false;
+    if (rerunRequested) requestSync(0);
   }
 }
 
@@ -159,14 +186,23 @@ async function pullAndApply(secret: string, profileId: string): Promise<void> {
   const since = Number((await getCursor(profileId)) ?? '0');
   const result = await pull(secret, profileId, since);
 
+  const attemptedSeries = new Set<string>();
+  let allResolved = true;
   for (const item of result.progress) {
-    await applyPulledProgress(db, account.id, profileId, item);
+    if (!(await applyPulledProgress(db, account.id, profileId, item, attemptedSeries))) allResolved = false;
   }
   for (const item of result.favorites) {
-    await applyPulledFavorite(db, account.id, profileId, item);
+    if (!(await applyPulledFavorite(db, account.id, profileId, item, attemptedSeries))) allResolved = false;
   }
 
-  await setCursor(profileId, result.cursor);
+  if (allResolved) {
+    await setCursor(profileId, result.cursor);
+  } else {
+    console.warn('[sync] some pulled items could not resolve to local content, will retry next sync');
+  }
+
+  queryClient.invalidateQueries({ queryKey: queryKeys.favorites });
+  queryClient.invalidateQueries({ queryKey: queryKeys.continueWatching });
 }
 
 type Db = Awaited<ReturnType<typeof getDatabase>>;
@@ -175,6 +211,7 @@ async function resolveLocalContent(
   db: Db,
   cuentaId: string,
   canonicalKey: string,
+  attemptedSeries?: Set<string>,
 ): Promise<{ contentId: string; episodeId: string | null } | null> {
   const parsed = parseCanonicalKey(canonicalKey);
   if (!parsed) return null;
@@ -185,10 +222,25 @@ async function resolveLocalContent(
       [cuentaId, 'series', Number(parsed.streamId)],
     );
     if (!serie) return null;
-    const episode = await db.getFirstAsync<{ id: string }>(
+    if (parsed.temporada == null || parsed.episodio == null) {
+      return { contentId: serie.id, episodeId: null };
+    }
+    let episode = await db.getFirstAsync<{ id: string }>(
       'SELECT id FROM episodios WHERE serie_id = ? AND temporada = ? AND episodio = ?;',
       [serie.id, parsed.temporada, parsed.episodio],
     );
+    if (!episode && attemptedSeries && !attemptedSeries.has(serie.id)) {
+      attemptedSeries.add(serie.id);
+      try {
+        await loadSeriesEpisodes(serie.id);
+      } catch (err) {
+        console.warn('[sync] failed to lazily load episodes for series', serie.id, err);
+      }
+      episode = await db.getFirstAsync<{ id: string }>(
+        'SELECT id FROM episodios WHERE serie_id = ? AND temporada = ? AND episodio = ?;',
+        [serie.id, parsed.temporada, parsed.episodio],
+      );
+    }
     if (!episode) return null;
     return { contentId: serie.id, episodeId: episode.id };
   }
@@ -206,9 +258,10 @@ async function applyPulledProgress(
   cuentaId: string,
   profileId: string,
   item: PushProgress,
-): Promise<void> {
-  const local = await resolveLocalContent(db, cuentaId, item.canonicalKey);
-  if (!local) return;
+  attemptedSeries: Set<string>,
+): Promise<boolean> {
+  const local = await resolveLocalContent(db, cuentaId, item.canonicalKey, attemptedSeries);
+  if (!local) return false;
 
   const matchClause =
     local.episodeId === null ? 'content_id = ? AND episode_id IS NULL' : 'episode_id = ?';
@@ -252,6 +305,7 @@ async function applyPulledProgress(
       ],
     );
   }
+  return true;
 }
 
 async function applyPulledFavorite(
@@ -259,13 +313,15 @@ async function applyPulledFavorite(
   cuentaId: string,
   profileId: string,
   item: PushFavorite,
-): Promise<void> {
-  const local = await resolveLocalContent(db, cuentaId, item.canonicalKey);
-  if (!local || local.episodeId !== null) return;
+  attemptedSeries: Set<string>,
+): Promise<boolean> {
+  const local = await resolveLocalContent(db, cuentaId, item.canonicalKey, attemptedSeries);
+  if (!local) return false;
+  if (local.episodeId !== null) return true;
 
   if (item.deletedAt !== null) {
     await db.runAsync('DELETE FROM favoritos WHERE content_id = ?;', [local.contentId]);
-    return;
+    return true;
   }
 
   await db.runAsync(
@@ -276,4 +332,5 @@ async function applyPulledFavorite(
        updated_at = excluded.updated_at, deleted_at = NULL, dirty = 0;`,
     [uuid(), local.contentId, item.createdAt, profileId, item.canonicalKey, Date.now()],
   );
+  return true;
 }

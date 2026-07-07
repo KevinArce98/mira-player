@@ -11,6 +11,7 @@ export interface ProgressEntry {
   positionMs: number;
   durationMs: number;
   updatedAt: number;
+  completado: boolean;
 }
 
 function read(acct: string): ProgressEntry[] {
@@ -25,10 +26,10 @@ function write(acct: string, entries: ProgressEntry[]): void {
   localStorage.setItem(key(acct), JSON.stringify(entries.slice(0, MAX_ENTRIES)));
 }
 
-// Lista para "Continuar viendo", más reciente primero (sin canales en vivo).
+// Lista para "Continuar viendo", más reciente primero (sin canales en vivo ni completados).
 export function continueWatching(acct: string): ProgressEntry[] {
   return read(acct)
-    .filter((e) => e.resume.kind !== 'live')
+    .filter((e) => e.resume.kind !== 'live' && !e.completado)
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
@@ -46,12 +47,26 @@ export function saveProgress(
 ): void {
   const k = progressKey(resume);
   const entries = read(acct).filter((e) => e.key !== k);
-  // Casi terminado: lo quitamos de "continuar viendo".
-  if (durationMs > 0 && positionMs / durationMs > 0.95) {
-    write(acct, entries);
-    return;
+  const completado = durationMs > 0 && positionMs / durationMs > 0.95;
+  entries.unshift({ key: k, item, resume, positionMs, durationMs, updatedAt: Date.now(), completado });
+  write(acct, entries);
+}
+
+// Marca un episodio/película como visto sin depender de la posición (ej. al
+// saltar al siguiente episodio antes de llegar al final real del video).
+// Preserva posición/duración existentes si ya había una entrada.
+export function completeProgress(acct: string, item: MediaItem, resume: ResumePayload): void {
+  const k = progressKey(resume);
+  const entries = read(acct);
+  const idx = entries.findIndex((e) => e.key === k);
+  const now = Date.now();
+  if (idx >= 0) {
+    const existing = entries[idx];
+    entries.splice(idx, 1);
+    entries.unshift({ ...existing, completado: true, updatedAt: now });
+  } else {
+    entries.unshift({ key: k, item, resume, positionMs: 0, durationMs: 0, updatedAt: now, completado: true });
   }
-  entries.unshift({ key: k, item, resume, positionMs, durationMs, updatedAt: Date.now() });
   write(acct, entries);
 }
 

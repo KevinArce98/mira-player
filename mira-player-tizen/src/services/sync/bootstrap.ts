@@ -1,9 +1,9 @@
 import type { StoredAccount } from '@/core/store';
-import { listProfiles, upsertProfile } from '@/core/profiles';
-import { getActiveProfileId, setActiveProfileId } from './sync-meta';
+import { deleteProfile, listProfiles, upsertProfile } from '@/core/profiles';
+import { setActiveProfileId, setCursor } from './sync-meta';
 import { getDeviceId, getSyncSecret, saveSyncSecret, setDeviceId } from './secret-store';
 import { isSyncConfigured } from './config';
-import { pushProfile, resolveAccount } from './client';
+import { resolveAccount } from './client';
 
 let inFlight: Promise<void> | null = null;
 
@@ -34,26 +34,19 @@ async function doBootstrap(account: StoredAccount, acctKey: string): Promise<voi
   saveSyncSecret(res.accountSecret);
   setDeviceId(res.deviceId);
 
+  const canonical = res.profiles.find((p) => p.isDefault) ?? res.profiles[0];
+  if (!canonical) return;
+
   const serverIds = new Set(res.profiles.map((p) => p.id));
   for (const p of res.profiles) {
     upsertProfile(acctKey, { id: p.id, nombre: p.nombre, avatar: p.avatar, isKids: p.isKids });
   }
-
-  let profileId = getActiveProfileId(acctKey);
-  const localProfiles = listProfiles(acctKey);
-  if (!profileId || !localProfiles.some((p) => p.id === profileId)) {
-    profileId = localProfiles[0]?.id ?? upsertProfile(acctKey, { id: crypto.randomUUID(), nombre: 'Principal' }).id;
-    setActiveProfileId(acctKey, profileId);
-  }
-
   for (const local of listProfiles(acctKey)) {
-    if (!serverIds.has(local.id)) {
-      await pushProfile(res.accountSecret, local.id, local.nombre, {
-        avatar: local.avatar,
-        isKids: local.isKids,
-      });
-    }
+    if (!serverIds.has(local.id)) deleteProfile(acctKey, local.id);
   }
+
+  setActiveProfileId(acctKey, canonical.id);
+  setCursor(canonical.id, 0);
 }
 
 export async function ensureSyncBootstrapped(account: StoredAccount, acctKey: string): Promise<void> {

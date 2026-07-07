@@ -258,8 +258,9 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
 
   const playNext = useCallback(() => {
     if (!nextUp) return;
+    void setCompleted(contentId, true, episodeId ?? null);
     router.replace({ pathname: '/player', params: { contentId, episodeId: nextUp.id } });
-  }, [nextUp, contentId]);
+  }, [nextUp, contentId, episodeId]);
 
   const cancelNext = useCallback(() => {
     if (nextUpEarlyRef.current) {

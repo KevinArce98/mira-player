@@ -273,8 +273,9 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
 
   const playNext = useCallback(() => {
     if (!nextUp) return;
+    void setCompleted(contentId, true, episodeId ?? null);
     void navigate(`/player?contentId=${contentId}&episodeId=${nextUp.id}`, { replace: true });
-  }, [nextUp, contentId, navigate]);
+  }, [nextUp, contentId, episodeId, navigate]);
 
   const cancelNext = useCallback(() => {
     if (nextUpEarlyRef.current) {
