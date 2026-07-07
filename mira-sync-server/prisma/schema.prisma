@@ -21,6 +21,7 @@ model Profile {
   nombre    String
   avatar    String?
   isKids    Boolean   @default(false)
+  isDefault Boolean   @default(false)
   pinHash   String?
   pinSalt   String?
   updatedAt DateTime  @default(now())

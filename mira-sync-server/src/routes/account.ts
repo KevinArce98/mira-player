@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import { prisma } from '../db.js';
 import { accountLookup, generateSecret, hashSecret } from '../identity.js';
@@ -15,11 +16,22 @@ accountRoutes.post('/resolve', async (c) => {
   if (!ok) return c.json({ error: 'xtream_auth_failed' }, 401);
 
   const lookup = accountLookup(body.servidor, body.usuario);
-  const account = await prisma.account.upsert({
-    where: { accountLookup: lookup },
-    create: { accountLookup: lookup },
-    update: {},
-  });
+  let account = await prisma.account.findUnique({ where: { accountLookup: lookup } });
+  if (!account) {
+    try {
+      account = await prisma.account.create({
+        data: {
+          accountLookup: lookup,
+          profiles: {
+            create: { id: randomUUID(), nombre: 'Principal', isDefault: true },
+          },
+        },
+      });
+    } catch {
+      account = await prisma.account.findUnique({ where: { accountLookup: lookup } });
+    }
+  }
+  if (!account) return c.json({ error: 'account_unavailable' }, 500);
 
   const secret = generateSecret();
   await prisma.device.upsert({
@@ -40,7 +52,7 @@ accountRoutes.post('/resolve', async (c) => {
 
   const profiles = await prisma.profile.findMany({
     where: { accountId: account.id, deletedAt: null },
-    orderBy: { updatedAt: 'asc' },
+    orderBy: [{ isDefault: 'desc' }, { updatedAt: 'asc' }],
   });
 
   return c.json({
@@ -52,6 +64,7 @@ accountRoutes.post('/resolve', async (c) => {
       nombre: p.nombre,
       avatar: p.avatar,
       isKids: p.isKids,
+      isDefault: p.isDefault,
       hasPin: p.pinHash != null,
     })),
   });
