@@ -8,9 +8,18 @@ export function normalizeUsuario(usuario: string): string {
   return usuario.trim().toLowerCase();
 }
 
+export function canonicalServerHost(servidor: string): string {
+  return servidor
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/:$/, '');
+}
+
 export function accountLookup(servidor: string, usuario: string): string {
   return createHash('sha256')
-    .update(`${normalizeServer(servidor)}|${normalizeUsuario(usuario)}`)
+    .update(`${canonicalServerHost(servidor)}|${normalizeUsuario(usuario)}`)
     .digest('hex');
 }
 

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { prisma } from '../db.js';
 import { requireAuth, type AuthVars } from '../auth.js';
+import { logInfo, logWarn } from '../logger.js';
 
 export const profileRoutes = new Hono<{ Variables: AuthVars }>();
 
@@ -30,7 +31,10 @@ profileRoutes.get('/', async (c) => {
 profileRoutes.post('/', async (c) => {
   const accountId = c.get('accountId');
   const body = await c.req.json().catch(() => null);
-  if (!body?.id || !body?.nombre) return c.json({ error: 'missing_fields' }, 400);
+  if (!body?.id || !body?.nombre) {
+    logWarn('profiles.create.missing_fields', { accountId });
+    return c.json({ error: 'missing_fields' }, 400);
+  }
 
   const profile = await prisma.profile.upsert({
     where: { id: body.id },
@@ -52,7 +56,11 @@ profileRoutes.post('/', async (c) => {
       updatedAt: new Date(),
     },
   });
-  if (profile.accountId !== accountId) return c.json({ error: 'forbidden' }, 403);
+  if (profile.accountId !== accountId) {
+    logWarn('profiles.create.forbidden', { accountId, profileId: body.id, ownerAccountId: profile.accountId });
+    return c.json({ error: 'forbidden' }, 403);
+  }
+  logInfo('profiles.create.ok', { accountId, profileId: profile.id, nombre: profile.nombre });
   return c.json({ profile });
 });
 
@@ -60,10 +68,14 @@ profileRoutes.delete('/:id', async (c) => {
   const accountId = c.get('accountId');
   const id = c.req.param('id');
   const existing = await prisma.profile.findFirst({ where: { id, accountId } });
-  if (!existing) return c.json({ error: 'not_found' }, 404);
+  if (!existing) {
+    logWarn('profiles.delete.not_found', { accountId, profileId: id });
+    return c.json({ error: 'not_found' }, 404);
+  }
   await prisma.profile.update({
     where: { id },
     data: { deletedAt: new Date(), updatedAt: new Date() },
   });
+  logInfo('profiles.delete.ok', { accountId, profileId: id });
   return c.json({ ok: true });
 });

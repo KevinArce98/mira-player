@@ -9,6 +9,7 @@ import {
   type ProgressFields,
   type FavoriteFields,
 } from '../merge.js';
+import { logInfo, logWarn } from '../logger.js';
 
 export const syncRoutes = new Hono<{ Variables: AuthVars }>();
 
@@ -23,10 +24,12 @@ function fromMs(ms: number | null | undefined): Date | null {
 
 syncRoutes.get('/pull', async (c) => {
   const accountId = c.get('accountId');
+  const deviceId = c.get('deviceId');
   const profileId = c.req.query('profileId');
   const since = Number(c.req.query('since') ?? '0');
   if (!profileId) return c.json({ error: 'missing_profile' }, 400);
   if (!(await assertProfileInAccount(accountId, profileId))) {
+    logWarn('sync.pull.forbidden', { accountId, deviceId, profileId });
     return c.json({ error: 'forbidden' }, 403);
   }
 
@@ -75,6 +78,16 @@ syncRoutes.get('/pull', async (c) => {
     }),
   };
   out.cursor = cursor;
+  logInfo('sync.pull.ok', {
+    accountId,
+    deviceId,
+    profileId,
+    since,
+    progressCount: out.progress.length,
+    favoritesCount: out.favorites.length,
+    preferencesCount: out.preferences.length,
+    cursor,
+  });
   return c.json(out);
 });
 
@@ -85,6 +98,7 @@ syncRoutes.post('/push', async (c) => {
   const profileId = body?.profileId;
   if (!profileId) return c.json({ error: 'missing_profile' }, 400);
   if (!(await assertProfileInAccount(accountId, profileId))) {
+    logWarn('sync.push.forbidden', { accountId, deviceId, profileId });
     return c.json({ error: 'forbidden' }, 403);
   }
 
@@ -92,10 +106,15 @@ syncRoutes.post('/push', async (c) => {
   const progressItems = Array.isArray(body.progress) ? body.progress : [];
   const favoriteItems = Array.isArray(body.favorites) ? body.favorites : [];
   const preferenceItems = Array.isArray(body.preferences) ? body.preferences : [];
+  let progressSkipped = 0;
+  let favoritesSkipped = 0;
 
   await prisma.$transaction(async (tx) => {
     for (const item of progressItems) {
-      if (!isValidCanonicalKey(item.canonicalKey)) continue;
+      if (!isValidCanonicalKey(item.canonicalKey)) {
+        progressSkipped += 1;
+        continue;
+      }
       const existing = await tx.progress.findUnique({
         where: { profileId_canonicalKey: { profileId, canonicalKey: item.canonicalKey } },
       });
@@ -142,7 +161,10 @@ syncRoutes.post('/push', async (c) => {
     }
 
     for (const item of favoriteItems) {
-      if (!isValidCanonicalKey(item.canonicalKey)) continue;
+      if (!isValidCanonicalKey(item.canonicalKey)) {
+        favoritesSkipped += 1;
+        continue;
+      }
       const existing = await tx.favorite.findUnique({
         where: { profileId_canonicalKey: { profileId, canonicalKey: item.canonicalKey } },
       });
@@ -203,6 +225,18 @@ syncRoutes.post('/push', async (c) => {
         },
       });
     }
+  });
+
+  logInfo('sync.push.ok', {
+    accountId,
+    deviceId,
+    profileId,
+    progressReceived: progressItems.length,
+    progressSkipped,
+    favoritesReceived: favoriteItems.length,
+    favoritesSkipped,
+    preferencesReceived: preferenceItems.length,
+    cursor: now.getTime(),
   });
 
   return c.json({ cursor: now.getTime() });

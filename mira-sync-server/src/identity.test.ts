@@ -14,6 +14,14 @@ describe('accountLookup', () => {
     expect(a).toBe(b);
   });
 
+  it('matches regardless of protocol and path', () => {
+    const a = accountLookup('https://demo.tv:8080/xtream', 'kevin');
+    const b = accountLookup('http://demo.tv:8080', 'kevin');
+    const c = accountLookup('demo.tv:8080', 'kevin');
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+  });
+
   it('differs for different usuario', () => {
     const a = accountLookup('http://demo.tv:8080', 'kevin');
     const b = accountLookup('http://demo.tv:8080', 'otro');

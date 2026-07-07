@@ -1,12 +1,14 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
 import { accountRoutes } from './routes/account.js';
 import { profileRoutes } from './routes/profiles.js';
 import { syncRoutes } from './routes/sync.js';
 
 const app = new Hono();
 
+app.use(logger());
 app.use(
   '*',
   cors({
