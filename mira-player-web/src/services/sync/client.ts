@@ -9,6 +9,7 @@ export interface ResolveResult {
     nombre: string;
     avatar: string | null;
     isKids: boolean;
+    isDefault: boolean;
     hasPin: boolean;
   }[];
 }

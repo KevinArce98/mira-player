@@ -2,6 +2,7 @@ import { getDatabase } from '@/db';
 import { uuid } from '@/lib/id';
 import { deletePassword, savePassword } from '@/services/credentials';
 import { bootstrapSyncSession } from '@/services/sync/bootstrap';
+import { markReauthDone } from '@/services/session-reauth';
 import type { Cuenta } from '@/types/models';
 
 export async function getAccount(): Promise<Cuenta | null> {
@@ -26,6 +27,7 @@ export async function saveAccount(input: {
     [id, input.servidor, input.usuario, existing?.ultima_sincronizacion ?? null],
   );
   savePassword(id, input.password);
+  markReauthDone();
 
   void bootstrapSyncSession({
     servidor: input.servidor,

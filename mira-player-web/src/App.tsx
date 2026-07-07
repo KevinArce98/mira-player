@@ -4,6 +4,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 
 import { runSync } from '@/services/sync/engine';
 import { ensureSyncBootstrapped } from '@/services/sync/bootstrap';
+import { getAccount } from '@/db/repositories/accounts';
+import { applyReauthReset, isReauthPending } from '@/services/session-reauth';
 
 import { ParentalProvider } from '@/providers/parental';
 import { PreferencesProvider } from '@/providers/preferences';
@@ -22,6 +24,7 @@ import { PlayerPage } from '@/pages/player';
 import { AuthGuard } from '@/components/layout/auth-guard';
 
 function AppLayout() {
+  if (isReauthPending()) return <Navigate to="/setup" replace />;
   return (
     <div className="flex h-full bg-bg">
       <Sidebar />
@@ -34,7 +37,15 @@ function AppLayout() {
 
 export function App() {
   useEffect(() => {
-    void ensureSyncBootstrapped().then(() => runSync());
+    void (async () => {
+      if (isReauthPending()) {
+        const account = await getAccount();
+        await applyReauthReset(account?.id ?? null);
+        return; // AuthGuard/AppLayout route to /setup until re-login
+      }
+      await ensureSyncBootstrapped();
+      await runSync();
+    })();
     const onVisible = () => {
       if (document.visibilityState === 'visible') void runSync();
     };

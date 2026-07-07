@@ -70,6 +70,23 @@ async function backfillProfileId(profileId: string): Promise<void> {
   );
 }
 
+export async function rekeyDataToProfile(profileId: string): Promise<void> {
+  const db = await getDatabase();
+  const now = Date.now();
+  await db.runAsync(
+    'UPDATE progreso SET profile_id = ?, updated_at = COALESCE(updated_at, last_watched_at, ?), dirty = 1 WHERE profile_id IS NULL OR profile_id != ?;',
+    [profileId, now, profileId],
+  );
+  await db.runAsync(
+    'UPDATE favoritos SET profile_id = ?, updated_at = COALESCE(updated_at, created_at, ?), dirty = 1 WHERE profile_id IS NULL OR profile_id != ?;',
+    [profileId, now, profileId],
+  );
+}
+
+export async function resetCursor(profileId: string): Promise<void> {
+  await setSyncState(KEY_CURSOR_PREFIX + profileId, '0');
+}
+
 export async function markAllDirty(profileId: string): Promise<void> {
   const db = await getDatabase();
   const now = Date.now();

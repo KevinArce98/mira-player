@@ -21,6 +21,8 @@ import { ParentalProvider } from '@/providers/parental';
 import { PreferencesProvider, usePreferences } from '@/providers/preferences';
 import { runSync } from '@/services/sync/engine';
 import { ensureSyncBootstrapped } from '@/services/sync/bootstrap';
+import { getAccount } from '@/db/repositories/accounts';
+import { applyReauthReset, isReauthPending } from '@/services/session-reauth';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,7 +55,15 @@ function ThemedNavigation({ fontsReady }: { fontsReady: boolean }) {
   }, []);
 
   useEffect(() => {
-    void ensureSyncBootstrapped().then(() => runSync());
+    void (async () => {
+      if (await isReauthPending()) {
+        const account = await getAccount();
+        await applyReauthReset(account?.id ?? null);
+        return;
+      }
+      await ensureSyncBootstrapped();
+      await runSync();
+    })();
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') void runSync();
     });

@@ -3,16 +3,26 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { deleteAccount, getAccount, saveAccount, saveDemoAccount } from '@/db/repositories/accounts';
 import { queryKeys } from '@/lib/query-client';
 import { isDemoAccount, syncDemoCatalog } from '@/services/demo';
+import { isReauthPending } from '@/services/session-reauth';
 import { clientFromAccount } from '@/services/xtream/from-account';
 import { XtreamClient } from '@/services/xtream/client';
 import type { XtreamUserInfo } from '@/types/xtream';
 
 const STATUS_TTL_MS = 30 * 60 * 1000;
 
+const REAUTH_QUERY_KEY = ['reauth-pending'] as const;
+
 export function useAccount() {
   return useQuery({
     queryKey: queryKeys.account,
     queryFn: getAccount,
+  });
+}
+
+export function useReauthPending() {
+  return useQuery({
+    queryKey: REAUTH_QUERY_KEY,
+    queryFn: isReauthPending,
   });
 }
 
@@ -51,6 +61,7 @@ export function useSaveAccount() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.account });
+      qc.invalidateQueries({ queryKey: REAUTH_QUERY_KEY });
     },
   });
 }
@@ -63,7 +74,10 @@ export function useSaveDemoAccount() {
       await syncDemoCatalog(cuenta);
       return cuenta;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.account }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.account });
+      qc.invalidateQueries({ queryKey: REAUTH_QUERY_KEY });
+    },
   });
 }
 

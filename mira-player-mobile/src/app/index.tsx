@@ -2,12 +2,13 @@ import { Redirect } from 'expo-router';
 
 import { Loading } from '@/components/ui/empty';
 import { ThemedView } from '@/components/themed-view';
-import { useAccount } from '@/hooks/data/use-account';
+import { useAccount, useReauthPending } from '@/hooks/data/use-account';
 
 export default function Index() {
   const { data: account, isLoading } = useAccount();
+  const { data: reauthPending, isLoading: reauthLoading } = useReauthPending();
 
-  if (isLoading) {
+  if (isLoading || reauthLoading) {
     return (
       <ThemedView style={{ flex: 1 }}>
         <Loading />
@@ -15,5 +16,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={account ? '/(tabs)/home' : '/setup'} />;
+  return <Redirect href={account && !reauthPending ? '/(tabs)/home' : '/setup'} />;
 }

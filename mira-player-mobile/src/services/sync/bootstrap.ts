@@ -1,16 +1,17 @@
 import { uuid } from '@/lib/id';
 import { getAccount } from '@/db/repositories/accounts';
-import { createProfile, listProfiles } from '@/db/repositories/profiles';
+import { applyServerProfile, deleteProfile, listProfiles } from '@/db/repositories/profiles';
 import {
-  ensureDefaultProfile,
   getDeviceId,
-  markAllDirty,
+  rekeyDataToProfile,
+  resetCursor,
   setAccountId,
+  setActiveProfileId,
   setDeviceId,
 } from '@/db/repositories/sync-meta';
 import { getPassword } from '@/services/credentials';
 import { isSyncConfigured } from './config';
-import { resolveAccount, pushProfile } from './client';
+import { resolveAccount } from './client';
 import { getSyncSecret, saveSyncSecret } from './secret-store';
 
 let inFlight: Promise<void> | null = null;
@@ -45,22 +46,27 @@ async function doBootstrapSyncSession(input: {
   await setAccountId(res.accountId);
   await setDeviceId(res.deviceId);
 
+  const canonical = res.profiles.find((p) => p.isDefault) ?? res.profiles[0];
+  if (!canonical) return;
+
   const serverIds = new Set(res.profiles.map((p) => p.id));
   for (const p of res.profiles) {
-    await createProfile({ id: p.id, nombre: p.nombre, avatar: p.avatar, isKids: p.isKids });
+    await applyServerProfile({
+      id: p.id,
+      nombre: p.nombre,
+      avatar: p.avatar,
+      isKids: p.isKids,
+      deletedAt: null,
+    });
   }
-
-  const profileId = await ensureDefaultProfile();
-  await markAllDirty(profileId);
 
   for (const local of await listProfiles()) {
-    if (!serverIds.has(local.id)) {
-      await pushProfile(res.accountSecret, local.id, local.nombre, {
-        avatar: local.avatar,
-        isKids: local.is_kids,
-      });
-    }
+    if (!serverIds.has(local.id)) await deleteProfile(local.id);
   }
+
+  await rekeyDataToProfile(canonical.id);
+  await setActiveProfileId(canonical.id);
+  await resetCursor(canonical.id);
 }
 
 export async function ensureSyncBootstrapped(): Promise<void> {

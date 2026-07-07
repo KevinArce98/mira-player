@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router';
 import { Loading } from '@/components/ui/empty';
 import { useAccount } from '@/hooks/data/use-account';
+import { isReauthPending } from '@/services/session-reauth';
 
 export function AuthGuard() {
   const { data: account, isLoading } = useAccount();
@@ -13,5 +14,5 @@ export function AuthGuard() {
     );
   }
 
-  return <Navigate to={account ? '/home' : '/setup'} replace />;
+  return <Navigate to={account && !isReauthPending() ? '/home' : '/setup'} replace />;
 }

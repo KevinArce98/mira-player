@@ -1,12 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 
+import { useReauthPending } from '@/hooks/data/use-account';
 import { useTheme } from '@/hooks/use-theme';
 import { useT } from '@/providers/preferences';
 
 export default function TabsLayout() {
   const theme = useTheme();
   const t = useT();
+  const { data: reauthPending, isLoading: reauthLoading } = useReauthPending();
+
+  if (reauthLoading) return null;
+  if (reauthPending) return <Redirect href="/setup" />;
+
   return (
     <Tabs
       screenOptions={{
