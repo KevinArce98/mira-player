@@ -80,10 +80,10 @@
     <section>
       <div class="lang-badge">Español</div>
       <h2>Política de Privacidad</h2>
-      <p><strong>Última actualización:</strong> junio de 2026</p>
+      <p><strong>Última actualización:</strong> julio de 2026</p>
 
       <h3>¿Qué datos recopila Mira?</h3>
-      <p>Mira <strong>no recopila, almacena ni transmite ningún dato personal</strong> a los servidores del desarrollador. La aplicación funciona íntegramente en tu dispositivo.</p>
+      <p>Mira no recopila datos con fines publicitarios ni de analítica, y no comparte información con terceros. La mayor parte de la app funciona íntegramente en tu dispositivo. La única excepción es la función opcional de <strong>sincronización entre dispositivos</strong>, descrita más abajo, que transmite un conjunto limitado de datos a un servidor operado por el desarrollador.</p>
 
       <h3>Credenciales de tu proveedor de medios</h3>
       <p>Las credenciales de tu cuenta (usuario y contraseña) se guardan <strong>únicamente en el almacenamiento seguro de tu dispositivo</strong>:</p>
@@ -91,13 +91,24 @@
         <li>iOS: Keychain (a través de Expo SecureStore)</li>
         <li>Android: EncryptedSharedPreferences (a través de Expo SecureStore)</li>
       </ul>
-      <p>La contraseña <strong>nunca</strong> se escribe en la base de datos local ni se envía a ningún servidor que no sea el de tu propio proveedor de medios.</p>
+      <p>La contraseña <strong>nunca</strong> se escribe en la base de datos local ni se envía a ningún servidor, ni siquiera al de sincronización descrito abajo. Al activar la sincronización, la contraseña se usa una sola vez para validarte contra el servidor de tu proveedor y luego se descarta.</p>
 
       <h3>Catálogo y progreso</h3>
-      <p>El catálogo de medios de tu servidor, así como tu historial de reproducción y favoritos, se almacenan en una base de datos SQLite <strong>local en tu dispositivo</strong>. Estos datos no salen del dispositivo.</p>
+      <p>El catálogo de medios de tu servidor, así como tu historial de reproducción y favoritos, se almacenan en una base de datos SQLite <strong>local en tu dispositivo</strong>. Si no usas la sincronización entre dispositivos, estos datos no salen del dispositivo.</p>
+
+      <h3>Sincronización entre dispositivos</h3>
+      <p>Mira incluye una función de sincronización que permite mantener el progreso de reproducción, los favoritos y los perfiles al día entre varios dispositivos que usan las mismas credenciales de tu proveedor de medios. Cuando esta función está activa en la app, se transmiten al servidor de sincronización (operado por el desarrollador, autoalojado, sin terceros involucrados):</p>
+      <ul>
+        <li>Un identificador derivado mediante <em>hash</em> (SHA-256) de la dirección de tu servidor y tu usuario. Nunca se transmite ni almacena tu contraseña.</li>
+        <li>Progreso de reproducción (posición, duración, si se completó) asociado a una clave de contenido interna, sin metadatos adicionales del proveedor.</li>
+        <li>Tu lista de favoritos (mismas claves de contenido).</li>
+        <li>Los perfiles que crees: nombre, avatar, si es un perfil infantil, y un <em>hash</em> con sal del PIN si configuraste uno. El PIN en texto plano nunca se transmite.</li>
+        <li>Un identificador aleatorio de dispositivo y la plataforma (iOS/Android), usados solo para reconciliar los cambios entre tus propios dispositivos.</li>
+      </ul>
+      <p>Estos datos se almacenan en un servidor propio del desarrollador y no se comparten, venden ni utilizan con fines publicitarios o de analítica. Si querés solicitar la eliminación de estos datos, escribinos a <a href="mailto:arias9068@gmail.com">arias9068@gmail.com</a> indicando el servidor y usuario de tu proveedor (los usaremos solo para localizar y borrar el registro).</p>
 
       <h3>Conexiones de red</h3>
-      <p>Mira solo realiza conexiones de red hacia el servidor de tu proveedor de medios (la dirección que tú introduces en la configuración). No existe ningún servidor de analítica, publicidad ni seguimiento de terceros.</p>
+      <p>Mira realiza conexiones de red hacia el servidor de tu proveedor de medios (la dirección que tú introduces en la configuración) y, si la sincronización entre dispositivos está activa, hacia el servidor de sincronización descrito arriba. No existe ningún servidor de analítica, publicidad ni seguimiento de terceros.</p>
 
       <h3>Modo demo</h3>
       <p>El modo demo integrado reproduce contenido con licencia Creative Commons almacenado en servidores públicos de terceros (Google CDN y Mux). No se transmite ningún dato personal a estos servidores durante la reproducción.</p>
@@ -118,10 +129,10 @@
     <section>
       <div class="lang-badge">English</div>
       <h2>Privacy Policy</h2>
-      <p><strong>Last updated:</strong> June 2026</p>
+      <p><strong>Last updated:</strong> July 2026</p>
 
       <h3>What data does Mira collect?</h3>
-      <p>Mira <strong>does not collect, store, or transmit any personal data</strong> to the developer's servers. The app operates entirely on your device.</p>
+      <p>Mira does not collect data for advertising or analytics purposes, and does not share information with third parties. Most of the app operates entirely on your device. The only exception is the optional <strong>cross-device sync</strong> feature, described below, which transmits a limited set of data to a server operated by the developer.</p>
 
       <h3>Your media provider credentials</h3>
       <p>Your account credentials (username and password) are stored <strong>exclusively in your device's secure storage</strong>:</p>
@@ -129,13 +140,24 @@
         <li>iOS: Keychain (via Expo SecureStore)</li>
         <li>Android: EncryptedSharedPreferences (via Expo SecureStore)</li>
       </ul>
-      <p>Your password is <strong>never</strong> written to the local database or sent to any server other than your own media provider's server.</p>
+      <p>Your password is <strong>never</strong> written to the local database or sent to any server, including the sync server described below. When sync is enabled, your password is used once to validate you against your provider's server and then discarded.</p>
 
       <h3>Catalog and playback progress</h3>
-      <p>Your server's media catalog, along with your playback history and favorites, are stored in a SQLite database <strong>locally on your device</strong>. This data never leaves the device.</p>
+      <p>Your server's media catalog, along with your playback history and favorites, are stored in a SQLite database <strong>locally on your device</strong>. If you don't use cross-device sync, this data never leaves the device.</p>
+
+      <h3>Cross-device sync</h3>
+      <p>Mira includes a sync feature that keeps playback progress, favorites, and profiles up to date across multiple devices using the same media provider credentials. When this feature is enabled in the app, the following is transmitted to the sync server (operated by the developer, self-hosted, no third parties involved):</p>
+      <ul>
+        <li>An identifier derived via SHA-256 hash of your server address and username. Your password is never transmitted or stored.</li>
+        <li>Playback progress (position, duration, completion status) tied to an internal content key, without any additional provider metadata.</li>
+        <li>Your favorites list (same content keys).</li>
+        <li>Any profiles you create: name, avatar, whether it's a kids profile, and a salted hash of the PIN if you set one. The plaintext PIN is never transmitted.</li>
+        <li>A random device identifier and platform (iOS/Android), used only to reconcile changes across your own devices.</li>
+      </ul>
+      <p>This data is stored on a server owned and operated by the developer, and is not shared, sold, or used for advertising or analytics. To request deletion of this data, email <a href="mailto:arias9068@gmail.com">arias9068@gmail.com</a> with your provider's server address and username (used only to locate and delete the record).</p>
 
       <h3>Network connections</h3>
-      <p>Mira only makes network connections to your media provider's server (the address you enter in the setup screen). There are no analytics, advertising, or third-party tracking servers.</p>
+      <p>Mira makes network connections to your media provider's server (the address you enter in the setup screen) and, if cross-device sync is enabled, to the sync server described above. There are no analytics, advertising, or third-party tracking servers.</p>
 
       <h3>Demo mode</h3>
       <p>The built-in demo mode plays Creative Commons licensed content hosted on public third-party servers (Google CDN and Mux). No personal data is transmitted to these servers during playback.</p>
