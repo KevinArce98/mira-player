@@ -14,10 +14,12 @@ const mont800 = fs.readFileSync(path.join(fontDir, "mont-800.ttf")).toString("ba
 
 const copy = {
   "01-setup": { h: "Tu reproductor de medios", s: "Conecta tu servidor en segundos" },
+  "02-home": { h: "Retoma justo donde ibas", s: "Continuar viendo y favoritos a mano" },
   "03-peliculas": { h: "Tu biblioteca de películas", s: "Tu catálogo siempre contigo" },
   "04-series": { h: "Tus series favoritas", s: "Continúa donde lo dejaste" },
   "05-series-details": { h: "Explora cada título", s: "Temporadas, episodios y más" },
-  "06-settings": { h: "Hecho a tu medida", s: "Control total y privacidad" },
+  "06-profiles": { h: "Un espacio para cada uno", s: "Perfiles con su propio progreso" },
+  "07-settings": { h: "Hecho a tu medida", s: "Control total y privacidad" },
 };
 
 const devices = {

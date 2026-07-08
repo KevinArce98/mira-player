@@ -1,71 +1,99 @@
 [
   {
     "device": "iphone",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/iphone-01-setup.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/iphone-01-setup.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/iphone-01-setup.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/iphone-01-setup.png",
     "w": 1284,
     "hpx": 2778
   },
   {
     "device": "iphone",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/iphone-03-peliculas.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/iphone-03-peliculas.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/iphone-02-home.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/iphone-02-home.png",
     "w": 1284,
     "hpx": 2778
   },
   {
     "device": "iphone",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/iphone-04-series.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/iphone-04-series.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/iphone-03-peliculas.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/iphone-03-peliculas.png",
     "w": 1284,
     "hpx": 2778
   },
   {
     "device": "iphone",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/iphone-05-series-details.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/iphone-05-series-details.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/iphone-04-series.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/iphone-04-series.png",
     "w": 1284,
     "hpx": 2778
   },
   {
     "device": "iphone",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/iphone-06-settings.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/iphone-06-settings.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/iphone-05-series-details.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/iphone-05-series-details.png",
+    "w": 1284,
+    "hpx": 2778
+  },
+  {
+    "device": "iphone",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/iphone-06-profiles.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/iphone-06-profiles.png",
+    "w": 1284,
+    "hpx": 2778
+  },
+  {
+    "device": "iphone",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/iphone-07-settings.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/iphone-07-settings.png",
     "w": 1284,
     "hpx": 2778
   },
   {
     "device": "ipad",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/ipad-01-setup.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/ipad-01-setup.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/ipad-01-setup.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/ipad-01-setup.png",
     "w": 2048,
     "hpx": 2732
   },
   {
     "device": "ipad",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/ipad-03-peliculas.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/ipad-03-peliculas.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/ipad-02-home.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/ipad-02-home.png",
     "w": 2048,
     "hpx": 2732
   },
   {
     "device": "ipad",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/ipad-04-series.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/ipad-04-series.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/ipad-03-peliculas.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/ipad-03-peliculas.png",
     "w": 2048,
     "hpx": 2732
   },
   {
     "device": "ipad",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/ipad-05-series-details.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/ipad-05-series-details.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/ipad-04-series.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/ipad-04-series.png",
     "w": 2048,
     "hpx": 2732
   },
   {
     "device": "ipad",
-    "htmlPath": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/html/ipad-06-settings.html",
-    "out": "/Users/kevinarias/Projects/mira-tv/mira-tv-mobile/store-assets/frames/ipad-06-settings.png",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/ipad-05-series-details.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/ipad-05-series-details.png",
+    "w": 2048,
+    "hpx": 2732
+  },
+  {
+    "device": "ipad",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/ipad-06-profiles.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/ipad-06-profiles.png",
+    "w": 2048,
+    "hpx": 2732
+  },
+  {
+    "device": "ipad",
+    "htmlPath": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/html/ipad-07-settings.html",
+    "out": "/Users/kevinarias/Projects/mira-player/mira-player-mobile/store-assets/frames/ipad-07-settings.png",
     "w": 2048,
     "hpx": 2732
   }
