@@ -25,7 +25,7 @@ export function ContentRail({
       <h2 className="px-4 text-lg font-bold font-display text-fg">{title}</h2>
       <div className="flex gap-4 overflow-x-auto px-4 pb-2 no-scrollbar">
         {items.map((item) => (
-          <div key={item.key} className="shrink-0 w-[120px]">
+          <div key={item.key} className="shrink-0 w-30">
             <PosterCard
               title={item.title}
               posterUrl={item.posterUrl}

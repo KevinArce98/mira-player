@@ -16,8 +16,6 @@ import type { Episodio } from '@/types/models';
 const SKIP_SECONDS = 10;
 const HIDE_DELAY = 3500;
 const NEXT_EPISODE_COUNTDOWN = 10;
-// Xtream no expone metadata de créditos: se aproxima mostrando el aviso
-// cuando quedan estos segundos para el final.
 const NEXT_EPISODE_LEAD_SECONDS = 30;
 
 function formatTime(seconds: number): string {
@@ -415,7 +413,7 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
             ) : null}
           </div>
 
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-[1]" onClick={handleCenterClick}>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-1" onClick={handleCenterClick}>
             {buffering ? null : (
               <div className="flex items-center gap-10">
                 {!isLive ? (
@@ -426,7 +424,7 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
                 ) : null}
                 <button
                   onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                  className="bg-black/45 border-0 rounded-[36px] w-[72px] h-[72px] flex items-center justify-center cursor-pointer text-white">
+                  className="bg-black/45 border-0 rounded-[36px] w-18 h-18 flex items-center justify-center cursor-pointer text-white">
                   {paused ? <Play size={36} fill="#fff" /> : <Pause size={36} />}
                 </button>
                 {!isLive ? (
@@ -447,7 +445,7 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <span className="text-white text-xs tabular-nums min-w-[40px] text-center">
+                <span className="text-white text-xs tabular-nums min-w-10 text-center">
                   {formatTime(displayTime)}
                 </span>
                 <input
@@ -456,12 +454,12 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
                   max={1}
                   step={0.001}
                   value={displayFraction}
-                  className="flex-1 cursor-pointer [accent-color:var(--color-tint)]"
+                  className="flex-1 cursor-pointer accent-tint"
                   onMouseDown={() => { if (hideTimer.current) clearTimeout(hideTimer.current); setScrubFraction(displayFraction); }}
                   onChange={(e) => setScrubFraction(Number(e.target.value))}
                   onMouseUp={(e) => { seekToFraction(Number((e.target as HTMLInputElement).value)); setScrubFraction(null); scheduleHide(); }}
                 />
-                <span className="text-white text-xs tabular-nums min-w-[40px] text-center">
+                <span className="text-white text-xs tabular-nums min-w-10 text-center">
                   {formatTime(duration)}
                 </span>
               </div>
