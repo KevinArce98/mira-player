@@ -3,6 +3,7 @@ import { uuid } from '@/lib/id';
 import { DEMO_SERVER } from '@/services/demo';
 import { deletePassword, savePassword } from '@/services/credentials';
 import { markReauthDone } from '@/services/session-reauth';
+import { ensureDefaultProfile } from '@/db/repositories/sync-meta';
 import type { Cuenta } from '@/types/models';
 
 export async function getAccount(): Promise<Cuenta | null> {
@@ -28,17 +29,20 @@ export async function saveAccount(input: {
   );
   await savePassword(id, input.password);
   await markReauthDone();
+  await ensureDefaultProfile();
 
-  void (async () => {
-    const { bootstrapSyncSession } = await import('@/services/sync/bootstrap');
-    await bootstrapSyncSession({
-      servidor: input.servidor,
-      usuario: input.usuario,
-      password: input.password,
-    });
-    const { runSync } = await import('@/services/sync/engine');
-    await runSync();
-  })().catch((err) => console.warn('[sync] bootstrap failed:', err));
+  if (input.servidor !== DEMO_SERVER) {
+    void (async () => {
+      const { bootstrapSyncSession } = await import('@/services/sync/bootstrap');
+      await bootstrapSyncSession({
+        servidor: input.servidor,
+        usuario: input.usuario,
+        password: input.password,
+      });
+      const { runSync } = await import('@/services/sync/engine');
+      await runSync();
+    })().catch((err) => console.warn('[sync] bootstrap failed:', err));
+  }
 
   return {
     id,

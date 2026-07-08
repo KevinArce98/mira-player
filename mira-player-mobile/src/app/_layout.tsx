@@ -22,6 +22,7 @@ import { PreferencesProvider, usePreferences } from '@/providers/preferences';
 import { runSync } from '@/services/sync/engine';
 import { ensureSyncBootstrapped } from '@/services/sync/bootstrap';
 import { getAccount } from '@/db/repositories/accounts';
+import { ensureDefaultProfile } from '@/db/repositories/sync-meta';
 import { applyReauthReset, isReauthPending } from '@/services/session-reauth';
 
 SplashScreen.preventAutoHideAsync();
@@ -60,6 +61,9 @@ function ThemedNavigation({ fontsReady }: { fontsReady: boolean }) {
         const account = await getAccount();
         await applyReauthReset(account?.id ?? null);
         return;
+      }
+      if (await getAccount()) {
+        await ensureDefaultProfile();
       }
       await ensureSyncBootstrapped();
       await runSync();

@@ -10,6 +10,7 @@ import {
   setDeviceId,
 } from '@/db/repositories/sync-meta';
 import { getPassword } from '@/services/credentials';
+import { isDemoAccount } from '@/services/demo';
 import { isSyncConfigured } from './config';
 import { resolveAccount } from './client';
 import { getSyncSecret, saveSyncSecret } from './secret-store';
@@ -74,7 +75,7 @@ export async function ensureSyncBootstrapped(): Promise<void> {
   if (await getSyncSecret()) return;
 
   const account = await getAccount();
-  if (!account) return;
+  if (!account || isDemoAccount(account)) return;
   const password = await getPassword(account.id);
   if (!password) return;
 
