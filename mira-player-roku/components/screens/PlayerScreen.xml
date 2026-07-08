@@ -20,26 +20,29 @@
   <children>
     <Rectangle id="bg" width="1280" height="720" color="0x000000FF" />
     <BusySpinner id="spinner" translation="[615, 330]" visible="true" />
-    <Label id="errorLabel" text="" translation="[340, 340]" color="0xFF5555FF" visible="false" width="600" wrap="true" />
+    <Label id="errorLabel" text="" translation="[340, 340]" color="0xE0857AFF" visible="false" width="600" wrap="true" />
     <Group id="osd" visible="false">
-      <Rectangle width="1280" height="110" color="0x000000BB" translation="[0, 0]" />
-      <Label id="osdTitle" text="" translation="[50, 30]" color="0xFFFFFFFF" width="1100" font="font:LargeBoldSystemFont" />
-      <Label id="osdTime" text="" translation="[1150, 75]" color="0x999999FF" />
-      <Label id="liveLabel" text="EN VIVO" translation="[50, 75]" color="0xFF4444FF" font="font:SmallBoldSystemFont" visible="false" />
-      <Rectangle width="1280" height="6" color="0x333333FF" translation="[0, 104]" />
-      <Rectangle id="progressBar" width="4" height="6" color="0xD4AA7DFF" translation="[0, 104]" />
+      <!-- Bottom scrim, approximating Tizen's linear-gradient overlay -->
+      <Rectangle width="1280" height="40" color="0x00000055" translation="[0, 560]" />
+      <Rectangle width="1280" height="40" color="0x000000AA" translation="[0, 600]" />
+      <Rectangle width="1280" height="80" color="0x000000E0" translation="[0, 640]" />
+      <Label id="osdTitle" text="" translation="[50, 650]" color="0xF3EEE6FF" width="1100" font="font:LargeBoldSystemFont" />
+      <Label id="osdTime" text="" translation="[1150, 695]" color="0xA39C90FF" />
+      <Label id="liveLabel" text="EN VIVO" translation="[50, 695]" color="0xE0857AFF" font="font:SmallBoldSystemFont" visible="false" />
+      <Rectangle width="1180" height="6" color="0x3B3A37FF" translation="[50, 714]" />
+      <Rectangle id="progressBar" width="4" height="6" color="0xD4AA7DFF" translation="[50, 714]" />
     </Group>
     <Group id="nextOverlay" visible="false">
       <Rectangle width="1280" height="720" color="0x000000E0" />
-      <Label text="SIGUIENTE EPISODIO" translation="[0, 240]" width="1280" horizAlign="center" color="0x999999FF" font="font:SmallBoldSystemFont" />
-      <Label id="nextTitle" text="" translation="[0, 280]" width="1280" horizAlign="center" color="0xFFFFFFFF" font="font:LargeBoldSystemFont" />
+      <Label text="SIGUIENTE EPISODIO" translation="[0, 240]" width="1280" horizAlign="center" color="0xA39C90FF" font="font:SmallBoldSystemFont" />
+      <Label id="nextTitle" text="" translation="[0, 280]" width="1280" horizAlign="center" color="0xF3EEE6FF" font="font:LargeBoldSystemFont" />
       <Label id="nextCountdown" text="" translation="[0, 335]" width="1280" horizAlign="center" color="0xD4AA7DFF" font="font:MediumSystemFont" />
-      <Rectangle id="nextPlayBtn" width="260" height="56" color="0xD4AA7DFF" translation="[360, 400]">
+      <Poster id="nextPlayBtn" uri="pkg:/images/ui/rr_260x56_8.png" blendColor="0xD4AA7DFF" translation="[360, 400]">
         <Label text="Reproducir ahora" width="260" height="56" horizAlign="center" vertAlign="center" color="0x272727FF" font="font:SmallBoldSystemFont" />
-      </Rectangle>
-      <Rectangle id="nextCancelBtn" width="260" height="56" color="0x2A2A2AFF" translation="[660, 400]">
-        <Label text="Cancelar" width="260" height="56" horizAlign="center" vertAlign="center" color="0xFFFFFFFF" font="font:SmallBoldSystemFont" />
-      </Rectangle>
+      </Poster>
+      <Poster id="nextCancelBtn" uri="pkg:/images/ui/rr_260x56_8.png" blendColor="0x323230FF" translation="[660, 400]">
+        <Label text="Cancelar" width="260" height="56" horizAlign="center" vertAlign="center" color="0xF3EEE6FF" font="font:SmallBoldSystemFont" />
+      </Poster>
     </Group>
   </children>
 </component>

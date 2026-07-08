@@ -9,59 +9,58 @@
   <script type="text/brightscript" uri="pkg:/source/sync.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/HomeScreen.brs" />
   <children>
-    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+    <Rectangle width="1280" height="720" color="0x272727FF" />
 
-    <!-- Sidebar -->
-    <Rectangle width="260" height="720" color="0x111111FF" />
-    <Label text="Mira" translation="[24, 36]" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+    <!-- Sidebar (icon-rail style, like Tizen's .sidebar) -->
+    <Rectangle width="190" height="720" color="0x323230FF" />
+    <Rectangle width="1" height="720" color="0x3B3A37FF" translation="[189, 0]" />
+    <Poster id="brandBadge" uri="pkg:/images/ui/rr_40x40_9.png" blendColor="0xD4AA7DFF" width="40" height="40" translation="[24, 28]" />
+    <Label text="M" translation="[24, 28]" width="40" height="40" horizAlign="center" vertAlign="center" font="font:LargeBoldSystemFont" color="0x272727FF" />
 
-    <!-- Nav list -->
-    <LabelList
+    <!-- Nav list (icon + label rows via custom NavItem renderer) -->
+    <MarkupList
       id="navList"
-      translation="[0, 110]"
+      translation="[0, 96]"
       numRows="6"
-      itemSize="[260, 60]"
-      itemSpacing="[0, 2]"
-      font="font:SmallBoldSystemFont"
-      color="0xCCCCCCFF"
-      focusedColor="0x1A1A1AFF"
-      focusBitmapBlendColor="0xD4AA7DFF"
-      drawFocusFeedback="true"
+      itemSize="[190, 52]"
+      itemSpacing="[0, 8]"
+      itemComponentName="NavItem"
     />
 
     <!-- Content header -->
-    <Label id="contentTitle" text="Inicio" translation="[290, 36]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+    <Label id="contentTitle" text="Inicio" translation="[224, 32]" font="font:LargeBoldSystemFont" color="0xF3EEE6FF" />
 
     <!-- Continue watching -->
-    <Label id="continueLabel" text="Continuar viendo" translation="[290, 90]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" visible="false" />
-    <Label text="*: Quitar" translation="[1180, 92]" font="font:SmallSystemFont" color="0x555555FF" visible="false" id="continueHint" />
+    <Label id="continueLabel" text="Continuar viendo" translation="[224, 88]" font="font:SmallBoldSystemFont" color="0xF3EEE6FF" visible="false" />
+    <Label text="*: Quitar" translation="[1180, 90]" font="font:SmallSystemFont" color="0x6E685EFF" visible="false" id="continueHint" />
     <PosterGrid
       id="continueGrid"
-      translation="[280, 120]"
-      numColumns="5"
+      translation="[224, 118]"
+      numColumns="6"
       numRows="1"
-      itemSize="[180, 130]"
-      itemSpacing="[10, 10]"
+      itemSize="[150, 218]"
+      itemSpacing="[14, 16]"
       posterDisplayMode="scaleToZoom"
       visible="false"
     />
 
     <!-- Favorites -->
-    <Label id="favLabel" text="Favoritos" translation="[290, 300]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" visible="false" />
+    <Label id="favLabel" text="Favoritos" translation="[224, 352]" font="font:SmallBoldSystemFont" color="0xF3EEE6FF" visible="false" />
     <PosterGrid
       id="favGrid"
-      translation="[280, 330]"
-      numColumns="5"
-      itemSize="[180, 200]"
-      itemSpacing="[10, 10]"
+      translation="[224, 382]"
+      numColumns="6"
+      numRows="1"
+      itemSize="[150, 218]"
+      itemSpacing="[14, 16]"
       posterDisplayMode="scaleToZoom"
       visible="false"
     />
 
     <!-- Empty / loading state -->
-    <Label id="stateLabel" text="Cargando favoritos…" color="0x999999FF" translation="[290, 300]" visible="false" />
+    <Label id="stateLabel" text="Cargando favoritos…" color="0xA39C90FF" translation="[224, 300]" visible="false" />
 
     <!-- Spinner -->
-    <BusySpinner id="spinner" translation="[740, 350]" visible="false" />
+    <BusySpinner id="spinner" translation="[700, 350]" visible="false" />
   </children>
 </component>

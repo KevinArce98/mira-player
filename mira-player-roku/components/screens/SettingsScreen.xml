@@ -8,35 +8,37 @@
   <script type="text/brightscript" uri="pkg:/source/utils.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/SettingsScreen.brs" />
   <children>
-    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
-    <Rectangle width="1280" height="70" color="0x111111FF" />
-    <Label text="Ajustes" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+    <Rectangle width="1280" height="720" color="0x272727FF" />
+    <Rectangle width="1280" height="70" color="0x323230FF" />
+    <Label text="Ajustes" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xF3EEE6FF" />
 
-    <!-- Account info -->
-    <Label text="Cuenta" translation="[50, 110]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
-    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 134]" />
-    <Label id="serverInfo" text="" translation="[50, 148]" color="0xCCCCCCFF" />
-    <Label id="userInfo" text="" translation="[50, 180]" color="0xCCCCCCFF" />
-    <Label id="expiryInfo" text="" translation="[50, 212]" color="0xCCCCCCFF" />
-    <Label id="statusInfo" text="" translation="[50, 244]" color="0xCCCCCCFF" />
+    <!-- Cuenta card -->
+    <Poster uri="pkg:/images/ui/rr_702x196_13.png" blendColor="0x3B3A37FF" translation="[289, 99]" />
+    <Poster uri="pkg:/images/ui/rr_700x194_13.png" blendColor="0x323230FF" translation="[290, 100]" />
+    <Label text="Cuenta" translation="[314, 116]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
+    <Label id="serverInfo" text="" translation="[314, 150]" color="0xA39C90FF" />
+    <Label id="userInfo" text="" translation="[314, 182]" color="0xA39C90FF" />
+    <Label id="expiryInfo" text="" translation="[314, 214]" color="0xA39C90FF" />
+    <Label id="statusInfo" text="" translation="[314, 246]" color="0xA39C90FF" />
 
-    <!-- Parental controls -->
-    <Label text="Control parental" translation="[50, 284]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
-    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 308]" />
-    <Label text="Bloquea categorías de contenido para adultos con un PIN." translation="[50, 318]" color="0x999999FF" font="font:SmallSystemFont" />
-    <Rectangle id="parentalBtn" width="360" height="54" color="0x2A2A2AFF" translation="[50, 344]">
-      <Label id="parentalBtnLabel" text="Control parental: Desactivado" color="0xFFFFFFFF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
-    </Rectangle>
+    <!-- Control parental card -->
+    <Poster uri="pkg:/images/ui/rr_702x146_13.png" blendColor="0x3B3A37FF" translation="[289, 319]" />
+    <Poster uri="pkg:/images/ui/rr_700x144_13.png" blendColor="0x323230FF" translation="[290, 320]" />
+    <Label text="Control parental" translation="[314, 336]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
+    <Label text="Bloquea categorías de contenido para adultos con un PIN." translation="[314, 366]" color="0xA39C90FF" font="font:SmallSystemFont" />
+    <Poster id="parentalBtn" uri="pkg:/images/ui/rr_360x54_8.png" blendColor="0x323230FF" translation="[314, 394]">
+      <Label id="parentalBtnLabel" text="Control parental: Desactivado" color="0xF3EEE6FF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
+    </Poster>
 
-    <!-- Actions -->
-    <Label text="Acciones" translation="[50, 424]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
-    <Rectangle width="1180" height="1" color="0x333333FF" translation="[50, 448]" />
+    <!-- Acciones card -->
+    <Poster uri="pkg:/images/ui/rr_702x116_13.png" blendColor="0x3B3A37FF" translation="[289, 485]" />
+    <Poster uri="pkg:/images/ui/rr_700x114_13.png" blendColor="0x323230FF" translation="[290, 486]" />
+    <Label text="Acciones" translation="[314, 502]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
+    <Poster id="logoutBtn" uri="pkg:/images/ui/rr_300x54_8.png" blendColor="0x323230FF" translation="[314, 530]">
+      <Label text="Cerrar sesión" color="0xE0857AFF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
+    </Poster>
 
-    <Rectangle id="logoutBtn" width="300" height="54" color="0x2A2A2AFF" translation="[50, 462]">
-      <Label text="Cerrar sesión" color="0xFF5555FF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
-    </Rectangle>
-
-    <BusySpinner id="spinner" translation="[620, 350]" visible="true" />
-    <Label id="stateLabel" text="Cargando información de cuenta…" color="0x999999FF" translation="[50, 560]" />
+    <BusySpinner id="spinner" translation="[620, 190]" visible="true" />
+    <Label id="stateLabel" text="Cargando información de cuenta…" color="0xA39C90FF" translation="[290, 620]" />
   </children>
 </component>

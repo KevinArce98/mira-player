@@ -17,13 +17,20 @@ end function
 
 function ClearCredentials() as Void
     reg = CreateObject("roRegistry")
-    reg.DeleteSection("credentials")
-    reg.DeleteSection("favorites")
-    reg.DeleteSection("progress")
-    reg.DeleteSection("browse")
-    reg.DeleteSection("parental")
-    reg.DeleteSection("continuar")
+    reg.Delete("credentials")
+    reg.Delete("favorites")
+    reg.Delete("progress")
+    reg.Delete("browse")
+    reg.Delete("parental")
+    reg.Delete("continuar")
+    reg.Delete("profiles")
     reg.Flush()
+    
+    sec = CreateObject("roRegistrySection", "sync")
+    sec.Delete("account_secret")
+    sec.Delete("active_profile_id")
+    sec.Delete("cursor")
+    sec.Flush()
 end function
 
 function LoadFavorites() as Object
@@ -54,7 +61,11 @@ end function
 function IsFavorite(id as String) as Boolean
     favs = LoadFavorites()
     for each fav in favs
-        favId = iif(type(fav) = "roAssociativeArray", SafeStr(fav["id"]), SafeStr(fav))
+        if type(fav) = "roAssociativeArray"
+            favId = SafeStr(fav["id"])
+        else
+            favId = SafeStr(fav)
+        end if
         if favId = id then return true
     end for
     return false
@@ -65,7 +76,11 @@ function ToggleFavorite(id as String, contentType as String, item as Object) as 
     newFavs = []
     found = false
     for each fav in favs
-        favId = iif(type(fav) = "roAssociativeArray", SafeStr(fav["id"]), SafeStr(fav))
+        if type(fav) = "roAssociativeArray"
+            favId = SafeStr(fav["id"])
+        else
+            favId = SafeStr(fav)
+        end if
         if favId = id
             found = true
         else

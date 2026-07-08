@@ -9,23 +9,27 @@
   <script type="text/brightscript" uri="pkg:/source/sync.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/ProfileScreen.brs" />
   <children>
-    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
-    <Rectangle width="1280" height="70" color="0x111111FF" />
-    <Label text="Perfiles" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+    <Rectangle width="1280" height="720" color="0x272727FF" />
+    <Rectangle width="1280" height="70" color="0x323230FF" />
+    <Label text="Perfiles" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xF3EEE6FF" />
+
+    <!-- Centered card (like Tizen's .settings-card) -->
+    <Poster uri="pkg:/images/ui/rr_509x502_13.png" blendColor="0x3B3A37FF" translation="[385, 109]" />
+    <Poster uri="pkg:/images/ui/rr_507x500_13.png" blendColor="0x323230FF" translation="[386, 110]" />
 
     <LabelList
       id="profileList"
-      translation="[50, 110]"
-      numRows="8"
-      itemSize="[420, 60]"
-      itemSpacing="[0, 4]"
+      translation="[416, 140]"
+      numRows="7"
+      itemSize="[447, 56]"
+      itemSpacing="[0, 6]"
       font="font:MediumBoldSystemFont"
-      color="0xCCCCCCFF"
-      focusedColor="0x1A1A1AFF"
+      color="0xA39C90FF"
+      focusedColor="0x272727FF"
       focusBitmapBlendColor="0xD4AA7DFF"
       drawFocusFeedback="true"
     />
 
-    <Label text="OK: seleccionar perfil activo o crear uno nuevo" translation="[50, 640]" color="0x999999FF" font="font:SmallSystemFont" />
+    <Label text="OK: seleccionar perfil activo o crear uno nuevo" translation="[0, 640]" width="1280" horizAlign="center" color="0xA39C90FF" font="font:SmallSystemFont" />
   </children>
 </component>

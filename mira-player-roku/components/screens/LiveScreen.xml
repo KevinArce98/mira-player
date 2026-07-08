@@ -8,24 +8,24 @@
   <script type="text/brightscript" uri="pkg:/source/utils.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/LiveScreen.brs" />
   <children>
-    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+    <Rectangle width="1280" height="720" color="0x272727FF" />
 
     <!-- Header -->
-    <Rectangle width="1280" height="70" color="0x111111FF" />
-    <Label text="TV en vivo" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
-    <Label text="&#171;/&#187;: Mover categoría" translation="[980, 25]" color="0x555555FF" font="font:SmallSystemFont" />
+    <Rectangle width="1280" height="70" color="0x323230FF" />
+    <Label text="TV en vivo" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xF3EEE6FF" />
+    <Label text="&#171;/&#187;: Mover categoría" translation="[980, 25]" color="0x6E685EFF" font="font:SmallSystemFont" />
 
-    <!-- Category list (left panel) -->
-    <Rectangle width="280" height="650" color="0x111111FF" translation="[0, 70]" />
+    <!-- Category list (left panel, like Tizen's .cat-col) -->
+    <Rectangle width="240" height="650" color="0x323230FF" translation="[0, 70]" />
     <LabelList
       id="categoryList"
       translation="[0, 70]"
       numRows="11"
-      itemSize="[280, 56]"
-      itemSpacing="[0, 2]"
+      itemSize="[240, 52]"
+      itemSpacing="[0, 4]"
       font="font:SmallSystemFont"
-      color="0xCCCCCCFF"
-      focusedColor="0x1A1A1AFF"
+      color="0xA39C90FF"
+      focusedColor="0x272727FF"
       focusBitmapBlendColor="0xD4AA7DFF"
       drawFocusFeedback="true"
     />
@@ -33,19 +33,19 @@
     <!-- Channel list (right panel) -->
     <LabelList
       id="channelList"
-      translation="[290, 70]"
+      translation="[264, 70]"
       numRows="11"
-      itemSize="[990, 56]"
-      itemSpacing="[0, 2]"
+      itemSize="[1016, 52]"
+      itemSpacing="[0, 4]"
       font="font:SmallSystemFont"
-      color="0xCCCCCCFF"
-      focusedColor="0x1A1A1AFF"
+      color="0xA39C90FF"
+      focusedColor="0x272727FF"
       focusBitmapBlendColor="0xD4AA7DFF"
       drawFocusFeedback="true"
     />
 
     <!-- State label -->
-    <Label id="stateLabel" text="Cargando categorías…" color="0x999999FF" translation="[640, 350]" visible="true" />
+    <Label id="stateLabel" text="Cargando categorías…" color="0xA39C90FF" translation="[640, 350]" visible="true" />
 
     <!-- Spinner -->
     <BusySpinner id="spinner" translation="[620, 380]" visible="true" />

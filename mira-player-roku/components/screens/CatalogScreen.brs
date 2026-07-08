@@ -127,6 +127,7 @@ sub buildCategoryList(data as Object)
 
     if restoreIdx > 0
         m.categoryList.jumpToItem = restoreIdx
+        loadItems(m.savedCategoryId)
     else
         loadItems("")
     end if
@@ -186,12 +187,14 @@ sub applyFilterAndSort()
 end sub
 
 sub renderPage()
-    if m.loadedCount = 0
+    isFirstPage = (m.loadedCount = 0)
+    if isFirstPage
         content = CreateObject("roSGNode", "ContentNode")
     else
         content = m.posterGrid.content
         if content = invalid
             content = CreateObject("roSGNode", "ContentNode")
+            isFirstPage = true
         end if
     end if
 
@@ -213,7 +216,12 @@ sub renderPage()
     end while
 
     m.loadedCount = endIdx + 1
-    m.posterGrid.content = content
+
+    ' Solo se reasigna "content" en la primera página: PosterGrid observa el
+    ' nodo por referencia y refleja los AppendChild automáticamente. Volver a
+    ' asignar el mismo nodo en páginas siguientes reinicia el foco/scroll al
+    ' primer elemento (bug conocido de Roku con RowList/MarkupGrid).
+    if isFirstPage then m.posterGrid.content = content
 
     if total = 0
         if m.searchTerm <> ""

@@ -1,11 +1,11 @@
 sub init()
     m.navItems = [
-        {label: "  Inicio",     screen: "home"},
-        {label: "  En vivo",    screen: "LiveScreen"},
-        {label: "  Películas",  screen: "CatalogScreen", tipo: "movie"},
-        {label: "  Series",     screen: "CatalogScreen", tipo: "series"},
-        {label: "  Perfiles",   screen: "ProfileScreen"},
-        {label: "  Ajustes",    screen: "SettingsScreen"},
+        {label: "Inicio",     icon: "pkg:/images/icons/nav_home.png",     screen: "home"},
+        {label: "En vivo",    icon: "pkg:/images/icons/nav_live.png",     screen: "LiveScreen"},
+        {label: "Películas",  icon: "pkg:/images/icons/nav_movies.png",   screen: "CatalogScreen", tipo: "movie"},
+        {label: "Series",     icon: "pkg:/images/icons/nav_series.png",   screen: "CatalogScreen", tipo: "series"},
+        {label: "Perfiles",   icon: "pkg:/images/icons/nav_profiles.png", screen: "ProfileScreen"},
+        {label: "Ajustes",    icon: "pkg:/images/icons/nav_settings.png", screen: "SettingsScreen"},
     ]
 
     m.navList = m.top.FindNode("navList")
@@ -27,6 +27,7 @@ sub init()
     for each item in m.navItems
         row = CreateObject("roSGNode", "ContentNode")
         row.title = item.label
+        row.AddFields({iconUri: item.icon})
         content.AppendChild(row)
     end for
     m.navList.content = content
@@ -91,6 +92,7 @@ sub loadContinueDisplay()
         m.continueLabel.visible = false
         m.continueHint.visible = false
         updateEmptyState()
+        repositionFav()
         return
     end if
 
@@ -106,6 +108,19 @@ sub loadContinueDisplay()
     m.continueLabel.visible = true
     m.continueHint.visible = true
     updateEmptyState()
+    repositionFav()
+end sub
+
+' Favoritos ocupa el lugar de "Continuar viendo" cuando esa fila está vacía,
+' para no dejar un hueco en blanco entre el título y Favoritos.
+sub repositionFav()
+    if m.continueGrid.visible
+        m.favLabel.translation = [224, 352]
+        m.favGrid.translation = [224, 382]
+    else
+        m.favLabel.translation = [224, 88]
+        m.favGrid.translation = [224, 118]
+    end if
 end sub
 
 sub updateEmptyState()
@@ -199,6 +214,7 @@ sub loadFavoritesDisplay()
     m.favGrid.content = content
     m.favGrid.visible = true
     m.favLabel.visible = true
+    repositionFav()
     m.filteredFavs = favs
     m.favGrid.ObserveField("itemSelected", "onFavSelected")
     updateEmptyState()
@@ -243,5 +259,23 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         confirmRemoveContinue()
         return true
     end if
+
+    if key = "right" and m.navList.IsInFocusChain()
+        if m.continueGrid.visible
+            m.continueGrid.SetFocus(true)
+            return true
+        else if m.favGrid.visible
+            m.favGrid.SetFocus(true)
+            return true
+        end if
+    end if
+
+    if key = "left"
+        if m.continueGrid.IsInFocusChain() or m.favGrid.IsInFocusChain()
+            m.navList.SetFocus(true)
+            return true
+        end if
+    end if
+
     return false
 end function

@@ -7,6 +7,7 @@ function HttpRequest(method as String, url as String, headers as Object, bodyStr
     http.SetUrl(url)
     http.SetCertificatesFile("common:/certs/ca-bundle.crt")
     http.InitClientCertificates()
+    http.EnableEncodings(true)
     for each k in headers
         http.AddHeader(k, headers[k])
     end for
@@ -90,11 +91,11 @@ end sub
 function doResolve(baseUrl as String, creds as Object) as Boolean
     deviceId = GetDeviceId()
     body = {
-        servidor: creds.server,
-        usuario: creds.username,
-        password: creds.password,
-        deviceId: deviceId,
-        platform: "roku"
+        "servidor": creds.server,
+        "usuario": creds.username,
+        "password": creds.password,
+        "deviceId": deviceId,
+        "platform": "roku"
     }
     res = HttpPostJson(baseUrl + "/account/resolve", {}, body)
     if res = invalid or res.data = invalid then return false
@@ -184,7 +185,7 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
             if posStr <> "" then posVal = Val(posStr)
             duracionTotal = invalid
             if durationSecs > 0 then duracionTotal = durationSecs
-            progressArr.Push({canonicalKey: key, posicionSegundos: int(posVal), duracionTotal: duracionTotal, completado: completadoVal, lastWatchedAt: updatedAt, deletedAt: invalid})
+            progressArr.Push({"canonicalKey": key, "posicionSegundos": int(posVal), "duracionTotal": duracionTotal, "completado": completadoVal, "lastWatchedAt": updatedAt, "deletedAt": invalid})
         end if
     end for
 
@@ -198,14 +199,14 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
             canonicalId = sid
             if ftype = "series" and serId <> "" then canonicalId = serId
             if ftype <> "" and canonicalId <> ""
-                favArr.Push({canonicalKey: ftype + ":" + canonicalId, createdAt: NowEpochMs(), deletedAt: invalid})
+                favArr.Push({"canonicalKey": ftype + ":" + canonicalId, "createdAt": NowEpochMs(), "deletedAt": invalid})
             end if
         end if
     end for
 
     if progressArr.Count() = 0 and favArr.Count() = 0 then return true
 
-    body = {profileId: profileId, progress: progressArr, favorites: favArr}
+    body = {"profileId": profileId, "progress": progressArr, "favorites": favArr}
     res = HttpPostJson(baseUrl + "/sync/push", AuthHeader(secret), body)
     if res = invalid then return false
     if res.status = 401 then return false
@@ -423,7 +424,11 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
         if matchId <> invalid
             newFavs = []
             for each fav in favs
-                favId = iif(type(fav) = "roAssociativeArray", SafeStr(fav["id"]), SafeStr(fav))
+                if type(fav) = "roAssociativeArray"
+                    favId = SafeStr(fav["id"])
+                else
+                    favId = SafeStr(fav)
+                end if
                 if favId <> matchId then newFavs.Push(fav)
             end for
             SaveFavorites(newFavs)

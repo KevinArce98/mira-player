@@ -174,12 +174,12 @@ end sub
 
 sub updateNextOverlay()
     m.nextCountdownLabel.text = "Se reproducirá en " + m.nextCountdown.ToStr() + " s"
-    m.nextPlayBtn.color = iif(m.nextFocus = 0, "0xD4AA7DFF", "0x2A2A2AFF")
-    m.nextCancelBtn.color = iif(m.nextFocus = 1, "0xD4AA7DFF", "0x2A2A2AFF")
+    m.nextPlayBtn.blendColor = iif(m.nextFocus = 0, "0xD4AA7DFF", "0x323230FF")
+    m.nextCancelBtn.blendColor = iif(m.nextFocus = 1, "0xD4AA7DFF", "0x323230FF")
     playLabel = m.nextPlayBtn.GetChild(0)
-    if playLabel <> invalid then playLabel.color = iif(m.nextFocus = 0, "0x272727FF", "0xFFFFFFFF")
+    if playLabel <> invalid then playLabel.color = iif(m.nextFocus = 0, "0x272727FF", "0xF3EEE6FF")
     cancelLabel = m.nextCancelBtn.GetChild(0)
-    if cancelLabel <> invalid then cancelLabel.color = iif(m.nextFocus = 1, "0x272727FF", "0xFFFFFFFF")
+    if cancelLabel <> invalid then cancelLabel.color = iif(m.nextFocus = 1, "0x272727FF", "0xF3EEE6FF")
 end sub
 
 sub onNextTick()
@@ -332,7 +332,7 @@ sub onPosition()
     m.osdTime.text = secsToStr(int(curPos)) + " / " + secsToStr(int(m.totalDuration))
     frac = curPos / m.totalDuration
     if frac > 1.0 then frac = 1.0
-    m.progressBar.width = int(1280 * frac)
+    m.progressBar.width = int(1180 * frac)
 end sub
 
 sub onVideoDuration()

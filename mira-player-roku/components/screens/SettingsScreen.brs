@@ -54,7 +54,7 @@ sub onAccountInfo()
     maxConn = SafeStr(userInfo["max_connections"])
 
     m.statusInfo.text = "Estado: " + iif(status = "Active", "Activa", status)
-    m.statusInfo.color = iif(status = "Active", "0x55FF55FF", "0xFF5555FF")
+    m.statusInfo.color = iif(status = "Active", "0x8FBF7AFF", "0xE0857AFF")
 
     if expiry <> "" and expiry <> "0"
         ts = expiry.ToInt()
@@ -71,14 +71,14 @@ sub onAccountInfo()
 end sub
 
 sub updateFocus()
-    m.parentalBtn.color = iif(m.focusIndex = 0, "0x3A2E1AFF", "0x2A2A2AFF")
-    m.logoutBtn.color = iif(m.focusIndex = 1, "0x3A1A1AFF", "0x2A2A2AFF")
+    m.parentalBtn.blendColor = iif(m.focusIndex = 0, "0x4A443BFF", "0x323230FF")
+    m.logoutBtn.blendColor = iif(m.focusIndex = 1, "0x4C3E3BFF", "0x323230FF")
 end sub
 
 sub updateParentalLabel()
     enabled = IsParentalEnabled()
     m.parentalBtnLabel.text = iif(enabled, "Control parental: Activado", "Control parental: Desactivado")
-    m.parentalBtnLabel.color = iif(enabled, "0xD4AA7DFF", "0xFFFFFFFF")
+    m.parentalBtnLabel.color = iif(enabled, "0xD4AA7DFF", "0xF3EEE6FF")
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
@@ -206,9 +206,12 @@ end sub
 
 sub onLogoutConfirm()
     btn = m.logoutDlg.buttonSelected
+    scene = m.top.GetScene()
+    if scene <> invalid then scene.Dialog = invalid
+    m.logoutDlg = invalid
+
     if btn = 1
         ClearCredentials()
         m.top.navigate = {screen: "SetupScreen", params: {}}
     end if
-    m.logoutDlg = invalid
 end sub

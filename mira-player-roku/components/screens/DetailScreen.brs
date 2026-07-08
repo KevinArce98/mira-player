@@ -9,6 +9,7 @@ sub init()
     m.favBtn = m.top.FindNode("favBtn")
     m.favBtnLabel = m.top.FindNode("favBtnLabel")
     m.episodePanel = m.top.FindNode("episodePanel")
+    m.episodeBorder = m.top.FindNode("episodeBorder")
     m.episodeList = m.top.FindNode("episodeList")
     m.seasonLabel = m.top.FindNode("seasonLabel")
     m.spinner = m.top.FindNode("spinner")
@@ -54,7 +55,7 @@ sub onDataSet()
     streamId = getContentId(item)
     isFav = IsFavorite(streamId)
     m.favBtnLabel.text = iif(isFav, "Favorito (si)", "Favorito")
-    m.favBtnLabel.color = iif(isFav, "0xD4AA7DFF", "0xFFFFFFFF")
+    m.favBtnLabel.color = iif(isFav, "0xD4AA7DFF", "0xF3EEE6FF")
 
     if m.top.contentType = "movie"
         loadMovieInfo(item)
@@ -117,6 +118,7 @@ sub buildSeasonEpisodes(episodes as Object)
     m.seasonKeys = sortSeasonKeys(episodes.Keys())
     m.currentSeasonIdx = 0
     m.episodePanel.visible = true
+    m.episodeBorder.visible = true
     if m.seasonKeys.Count() = 0 then return
     showSeason(m.seasonKeys[0])
 end sub
@@ -223,13 +225,13 @@ function buildEpisodeQueue(startSeasonIdx as Integer, startEpIdx as Integer) as 
 end function
 
 sub updateFocus()
-    m.playBtn.color = "0x2A2A2AFF"
-    m.favBtn.color = "0x2A2A2AFF"
+    m.playBtn.blendColor = "0x323230FF"
+    m.favBtn.blendColor = "0x323230FF"
 
     if m.focusIndex = 0
-        m.playBtn.color = "0xD4AA7DFF"
+        m.playBtn.blendColor = "0xD4AA7DFF"
     else if m.focusIndex = 1
-        m.favBtn.color = "0x3A3A3AFF"
+        m.favBtn.blendColor = "0x323230FF"
     else if m.focusIndex = 2
         m.episodeList.SetFocus(true)
         return
@@ -326,7 +328,7 @@ sub toggleFav()
     if id = "" then return
     isFav = ToggleFavorite(id, m.top.contentType, item)
     m.favBtnLabel.text = iif(isFav, "Favorito (si)", "Favorito")
-    m.favBtnLabel.color = iif(isFav, "0xD4AA7DFF", "0xFFFFFFFF")
+    m.favBtnLabel.color = iif(isFav, "0xD4AA7DFF", "0xF3EEE6FF")
     RunSync(m.top)
 end sub
 

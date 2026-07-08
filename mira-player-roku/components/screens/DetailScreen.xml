@@ -11,29 +11,31 @@
   <script type="text/brightscript" uri="pkg:/source/sync.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/DetailScreen.brs" />
   <children>
-    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+    <Rectangle width="1280" height="720" color="0x272727FF" />
 
-    <!-- Poster -->
-    <Rectangle width="260" height="370" color="0x2A2A2AFF" translation="[50, 90]" />
+    <!-- Poster (bordered card, like Tizen's .detail-poster) -->
+    <Poster uri="pkg:/images/ui/rr_264x374_8.png" blendColor="0x3B3A37FF" translation="[48, 88]" />
+    <Poster uri="pkg:/images/ui/rr_260x370_8.png" blendColor="0x323230FF" translation="[50, 90]" />
     <Poster id="poster" width="260" height="370" translation="[50, 90]" loadDisplayMode="scaleToZoom" />
 
     <!-- Info area -->
-    <Label id="titleLabel" text="" translation="[340, 90]" width="860" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" wrap="true" />
-    <Label id="metaLabel" text="" translation="[340, 150]" color="0x999999FF" />
+    <Label id="titleLabel" text="" translation="[340, 90]" width="860" font="font:LargeBoldSystemFont" color="0xF3EEE6FF" wrap="true" />
+    <Label id="metaLabel" text="" translation="[340, 150]" color="0xA39C90FF" />
     <Label id="genreLabel" text="" translation="[340, 185]" color="0xD4AA7DFF" />
-    <Label id="descLabel" text="" translation="[340, 230]" width="860" color="0xCCCCCCFF" wrap="true" maxLines="4" />
-    <Label id="castLabel" text="" translation="[340, 350]" width="860" color="0x999999FF" wrap="true" maxLines="2" />
+    <Label id="descLabel" text="" translation="[340, 230]" width="860" color="0xA39C90FF" wrap="true" maxLines="4" />
+    <Label id="castLabel" text="" translation="[340, 350]" width="860" color="0xA39C90FF" wrap="true" maxLines="2" />
 
     <!-- Action buttons -->
-    <Rectangle id="playBtn" width="220" height="54" color="0xD4AA7DFF" translation="[340, 430]">
-      <Label id="playBtnLabel" text="Reproducir" color="0x1A1A1AFF" translation="[30, 14]" font="font:MediumBoldSystemFont" />
-    </Rectangle>
-    <Rectangle id="favBtn" width="220" height="54" color="0x2A2A2AFF" translation="[580, 430]">
-      <Label id="favBtnLabel" text="Favorito" color="0xFFFFFFFF" translation="[30, 14]" font="font:MediumBoldSystemFont" />
-    </Rectangle>
+    <Poster id="playBtn" uri="pkg:/images/ui/rr_220x54_8.png" blendColor="0xD4AA7DFF" translation="[340, 430]">
+      <Label id="playBtnLabel" text="Reproducir" width="220" height="54" horizAlign="center" vertAlign="center" color="0x272727FF" font="font:MediumBoldSystemFont" />
+    </Poster>
+    <Poster id="favBtn" uri="pkg:/images/ui/rr_220x54_8.png" blendColor="0x323230FF" translation="[580, 430]">
+      <Label id="favBtnLabel" text="Favorito" width="220" height="54" horizAlign="center" vertAlign="center" color="0xF3EEE6FF" font="font:MediumBoldSystemFont" />
+    </Poster>
 
-    <!-- Series episode list -->
-    <Rectangle id="episodePanel" width="880" height="230" color="0x111111FF" translation="[340, 500]" visible="false">
+    <!-- Series episode list (bordered card) -->
+    <Poster uri="pkg:/images/ui/rr_884x234_8.png" blendColor="0x3B3A37FF" translation="[338, 498]" visible="false" id="episodeBorder" />
+    <Poster id="episodePanel" uri="pkg:/images/ui/rr_880x230_8.png" blendColor="0x323230FF" translation="[340, 500]" visible="false">
       <Label id="seasonLabel" text="Temporada 1" translation="[14, 10]" color="0xD4AA7DFF" font="font:SmallBoldSystemFont" />
       <LabelList
         id="episodeList"
@@ -41,17 +43,17 @@
         numRows="4"
         itemSize="[880, 44]"
         font="font:SmallSystemFont"
-        color="0xCCCCCCFF"
-        focusedColor="0x1A1A1AFF"
+        color="0xA39C90FF"
+        focusedColor="0x272727FF"
         focusBitmapBlendColor="0xD4AA7DFF"
         drawFocusFeedback="true"
       />
-    </Rectangle>
+    </Poster>
 
     <!-- Spinner -->
     <BusySpinner id="spinner" translation="[620, 500]" visible="false" />
 
     <!-- Focus index: 0=play, 1=fav, 2=episodes -->
-    <Label id="focusHint" text="" translation="[340, 500]" color="0x666666FF" />
+    <Label id="focusHint" text="" translation="[340, 500]" color="0x6E685EFF" />
   </children>
 </component>

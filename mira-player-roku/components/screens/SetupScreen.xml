@@ -7,39 +7,46 @@
   <script type="text/brightscript" uri="pkg:/source/utils.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens/SetupScreen.brs" />
   <children>
-    <Rectangle width="1280" height="720" color="0x1A1A1AFF" />
+    <Rectangle width="1280" height="720" color="0x272727FF" />
+
+    <!-- Card panel (1px border + bg-element fill, like .setup-card) -->
+    <Poster uri="pkg:/images/ui/rr_582x582_13.png" blendColor="0x3B3A37FF" translation="[349, 69]" />
+    <Poster uri="pkg:/images/ui/rr_580x580_13.png" blendColor="0x323230FF" translation="[350, 70]" />
 
     <!-- Logo -->
-    <Label text="Mira" translation="[490, 100]" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
-    <Label text="Conecta tu cuenta Xtream Codes" translation="[390, 150]" color="0x999999FF" />
+    <Label text="Mira" translation="[350, 106]" width="580" horizAlign="center" font="font:LargeBoldSystemFont" color="0xD4AA7DFF" />
+    <Label text="Conecta tu cuenta Xtream Codes" translation="[350, 156]" width="580" horizAlign="center" color="0xA39C90FF" />
 
     <!-- Server field -->
-    <Label text="Servidor" translation="[390, 230]" color="0xCCCCCCFF" />
-    <Rectangle id="serverBox" width="500" height="54" color="0x2A2A2AFF" translation="[390, 255]">
-      <Label id="serverLabel" text="Toca OK para editar" color="0x666666FF" translation="[14, 14]" />
-    </Rectangle>
+    <Label text="Servidor" translation="[390, 220]" color="0xA39C90FF" font="font:SmallSystemFont" />
+    <Poster id="serverBorder" uri="pkg:/images/ui/rr_504x58_8.png" blendColor="0x3B3A37FF" translation="[388, 244]" />
+    <Poster uri="pkg:/images/ui/rr_500x54_8.png" blendColor="0x272727FF" translation="[390, 246]">
+      <Label id="serverLabel" text="Toca OK para editar" color="0x6E685EFF" translation="[16, 16]" />
+    </Poster>
 
     <!-- Username field -->
-    <Label text="Usuario" translation="[390, 330]" color="0xCCCCCCFF" />
-    <Rectangle id="usernameBox" width="500" height="54" color="0x2A2A2AFF" translation="[390, 355]">
-      <Label id="usernameLabel" text="Toca OK para editar" color="0x666666FF" translation="[14, 14]" />
-    </Rectangle>
+    <Label text="Usuario" translation="[390, 316]" color="0xA39C90FF" font="font:SmallSystemFont" />
+    <Poster id="usernameBorder" uri="pkg:/images/ui/rr_504x58_8.png" blendColor="0x3B3A37FF" translation="[388, 340]" />
+    <Poster uri="pkg:/images/ui/rr_500x54_8.png" blendColor="0x272727FF" translation="[390, 342]">
+      <Label id="usernameLabel" text="Toca OK para editar" color="0x6E685EFF" translation="[16, 16]" />
+    </Poster>
 
     <!-- Password field -->
-    <Label text="Contraseña" translation="[390, 430]" color="0xCCCCCCFF" />
-    <Rectangle id="passwordBox" width="500" height="54" color="0x2A2A2AFF" translation="[390, 455]">
-      <Label id="passwordLabel" text="Toca OK para editar" color="0x666666FF" translation="[14, 14]" />
-    </Rectangle>
+    <Label text="Contraseña" translation="[390, 412]" color="0xA39C90FF" font="font:SmallSystemFont" />
+    <Poster id="passwordBorder" uri="pkg:/images/ui/rr_504x58_8.png" blendColor="0x3B3A37FF" translation="[388, 436]" />
+    <Poster uri="pkg:/images/ui/rr_500x54_8.png" blendColor="0x272727FF" translation="[390, 438]">
+      <Label id="passwordLabel" text="Toca OK para editar" color="0x6E685EFF" translation="[16, 16]" />
+    </Poster>
 
     <!-- Connect button -->
-    <Rectangle id="connectBox" width="500" height="54" color="0xD4AA7DFF" translation="[390, 540]">
-      <Label text="Conectar" color="0x1A1A1AFF" translation="[200, 14]" font="font:MediumBoldSystemFont" />
-    </Rectangle>
+    <Poster id="connectBox" uri="pkg:/images/ui/rr_500x54_8.png" blendColor="0xD4AA7DFF" translation="[390, 522]">
+      <Label text="Conectar" width="500" height="54" horizAlign="center" vertAlign="center" color="0x272727FF" font="font:MediumBoldSystemFont" />
+    </Poster>
 
     <!-- Error -->
-    <Label id="errorLabel" text="" color="0xFF5555FF" translation="[390, 610]" width="500" wrap="true" />
+    <Label id="errorLabel" text="" color="0xE0857AFF" translation="[390, 590]" width="500" wrap="true" />
 
     <!-- Spinner -->
-    <BusySpinner id="spinner" translation="[620, 610]" visible="false" />
+    <BusySpinner id="spinner" translation="[620, 590]" visible="false" />
   </children>
 </component>

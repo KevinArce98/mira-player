@@ -4,9 +4,9 @@ sub init()
     m.password = ""
     m.focusIndex = 0
 
-    m.serverBox = m.top.FindNode("serverBox")
-    m.usernameBox = m.top.FindNode("usernameBox")
-    m.passwordBox = m.top.FindNode("passwordBox")
+    m.serverBox = m.top.FindNode("serverBorder")
+    m.usernameBox = m.top.FindNode("usernameBorder")
+    m.passwordBox = m.top.FindNode("passwordBorder")
     m.connectBox = m.top.FindNode("connectBox")
     m.serverLabel = m.top.FindNode("serverLabel")
     m.usernameLabel = m.top.FindNode("usernameLabel")
@@ -48,19 +48,19 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
 end function
 
 sub updateFocus()
-    m.serverBox.color = "0x2A2A2AFF"
-    m.usernameBox.color = "0x2A2A2AFF"
-    m.passwordBox.color = "0x2A2A2AFF"
-    m.connectBox.color = "0xD4AA7DFF"
+    m.serverBox.blendColor = "0x3B3A37FF"
+    m.usernameBox.blendColor = "0x3B3A37FF"
+    m.passwordBox.blendColor = "0x3B3A37FF"
+    m.connectBox.blendColor = "0xD4AA7DFF"
 
     if m.focusIndex = 0
-        m.serverBox.color = "0x3D3322FF"
+        m.serverBox.blendColor = "0xD4AA7DFF"
     else if m.focusIndex = 1
-        m.usernameBox.color = "0x3D3322FF"
+        m.usernameBox.blendColor = "0xD4AA7DFF"
     else if m.focusIndex = 2
-        m.passwordBox.color = "0x3D3322FF"
+        m.passwordBox.blendColor = "0xD4AA7DFF"
     else if m.focusIndex = 3
-        m.connectBox.color = "0xC49A6DFF"
+        m.connectBox.blendColor = "0xBF9970FF"
     end if
 end sub
 
@@ -93,15 +93,15 @@ sub onKeyboardClosed()
     if m.focusIndex = 0
         m.server = text
         m.serverLabel.text = iif(text = "", "Toca OK para editar", text)
-        m.serverLabel.color = iif(text = "", "0x666666FF", "0xFFFFFFFF")
+        m.serverLabel.color = iif(text = "", "0x6E685EFF", "0xF3EEE6FF")
     else if m.focusIndex = 1
         m.username = text
         m.usernameLabel.text = iif(text = "", "Toca OK para editar", text)
-        m.usernameLabel.color = iif(text = "", "0x666666FF", "0xFFFFFFFF")
+        m.usernameLabel.color = iif(text = "", "0x6E685EFF", "0xF3EEE6FF")
     else if m.focusIndex = 2
         m.password = text
         m.passwordLabel.text = iif(text = "", "Toca OK para editar", "••••••••")
-        m.passwordLabel.color = iif(text = "", "0x666666FF", "0xFFFFFFFF")
+        m.passwordLabel.color = iif(text = "", "0x6E685EFF", "0xF3EEE6FF")
     end if
 
     m.activeKb = invalid
