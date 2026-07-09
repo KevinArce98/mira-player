@@ -42,7 +42,10 @@ end sub
 
 sub onFocusChanged()
     if not m.top.IsInFocusChain() then return
-    if m.top.credentials <> invalid then loadContinueDisplay()
+    if m.top.credentials <> invalid
+        loadContinueDisplay()
+        loadFavoritesDisplay()
+    end if
     if not m.navList.IsInFocusChain() and not m.continueGrid.IsInFocusChain() and not m.favGrid.IsInFocusChain()
         m.navList.SetFocus(true)
     end if
@@ -80,10 +83,12 @@ sub onNavSelected(event as Object)
 end sub
 
 sub loadContinueDisplay()
+    activeProfile = GetActiveProfileId()
     all = LoadContinueList()
     items = []
     for each entry in all
-        if entry["completado"] <> true and entry["deletedAt"] = invalid then items.Push(entry)
+        owned = entry["profileId"] = invalid or entry["profileId"] = activeProfile
+        if entry["completado"] <> true and entry["deletedAt"] = invalid and owned then items.Push(entry)
     end for
     m.filteredContinue = items
 
@@ -192,10 +197,16 @@ sub onRemoveContinueConfirm()
 end sub
 
 sub loadFavoritesDisplay()
+    activeProfile = GetActiveProfileId()
     all = LoadFavorites()
     favs = []
     for each fav in all
-        if type(fav) <> "roAssociativeArray" or fav["deletedAt"] = invalid then favs.Push(fav)
+        if type(fav) <> "roAssociativeArray"
+            favs.Push(fav)
+        else
+            owned = fav["profileId"] = invalid or fav["profileId"] = activeProfile
+            if fav["deletedAt"] = invalid and owned then favs.Push(fav)
+        end if
     end for
     if favs.Count() = 0
         m.favGrid.visible = false

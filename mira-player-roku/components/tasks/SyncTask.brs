@@ -172,7 +172,8 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
     for each entry in continueItems
         key = SafeStr(entry["key"])
         isCanonical = (Left(key, 6) = "movie:") or (Left(key, 5) = "live:") or (Left(key, 7) = "series:")
-        if key <> "" and isCanonical
+        owned = entry["profileId"] = invalid or entry["profileId"] = profileId
+        if key <> "" and isCanonical and owned
             durationSecs = entry["durationSecs"]
             if durationSecs = invalid then durationSecs = 0
             updatedAt = entry["updatedAt"]
@@ -180,7 +181,7 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
             completadoVal = entry["completado"]
             if completadoVal <> true then completadoVal = false
             sec = CreateObject("roRegistrySection", "progress")
-            posStr = sec.Read(key)
+            posStr = sec.Read(ProgressPositionKey(profileId, key))
             posVal = 0
             if posStr <> "" then posVal = Val(posStr)
             duracionTotal = invalid
@@ -195,12 +196,17 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
     favsChanged = false
     for each fav in favs
         if type(fav) = "roAssociativeArray"
+            owned = fav["profileId"] = invalid or fav["profileId"] = profileId
+            if fav["profileId"] = invalid
+                fav["profileId"] = profileId
+                favsChanged = true
+            end if
             ftype = SafeStr(fav["type"])
             sid = SafeStr(fav["stream_id"])
             serId = SafeStr(fav["series_id"])
             canonicalId = sid
             if ftype = "series" and serId <> "" then canonicalId = serId
-            if ftype <> "" and canonicalId <> ""
+            if ftype <> "" and canonicalId <> "" and owned
                 if fav["createdAt"] = invalid
                     fav["createdAt"] = NowEpochMs()
                     favsChanged = true
@@ -214,7 +220,10 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
             rev = LoadFavoritesRev()
             favs2 = LoadFavorites()
             for each fav in favs2
-                if type(fav) = "roAssociativeArray" and fav["createdAt"] = invalid then fav["createdAt"] = NowEpochMs()
+                if type(fav) = "roAssociativeArray"
+                    if fav["profileId"] = invalid then fav["profileId"] = profileId
+                    if fav["createdAt"] = invalid then fav["createdAt"] = NowEpochMs()
+                end if
             end for
             if attempt = 5
                 SaveFavorites(favs2)
@@ -231,7 +240,7 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
     if res = invalid then return false
     if res.status = 401 then return false
     if res.status < 200 or res.status >= 300 then return false
-    MarkAllContinueEntriesSynced()
+    MarkAllContinueEntriesSynced(profileId)
     return true
 end function
 
@@ -250,12 +259,12 @@ sub doPull(baseUrl as String, secret as String, profileId as String, creds as Ob
 
     if data.progress <> invalid
         for each item in data.progress
-            if not applyPulledProgress(creds, item) then allResolved = false
+            if not applyPulledProgress(creds, item, profileId) then allResolved = false
         end for
     end if
     if data.favorites <> invalid
         for each item in data.favorites
-            if not applyPulledFavorite(creds, item) then allResolved = false
+            if not applyPulledFavorite(creds, item, profileId) then allResolved = false
         end for
     end if
 
@@ -328,7 +337,7 @@ function ResolveSeriesBasicInfo(creds as Object, seriesId as String) as Object
     return {name: SafeStr(info["name"]), icon: SafeStr(info["cover"])}
 end function
 
-function IsFavoriteMatch(fav as Object, ftype as String, fid as String) as Boolean
+function IsFavoriteMatch(fav as Object, ftype as String, fid as String, profileId as String) as Boolean
     if type(fav) <> "roAssociativeArray" then return false
     favType = SafeStr(fav["type"])
     if favType <> ftype then return false
@@ -336,7 +345,8 @@ function IsFavoriteMatch(fav as Object, ftype as String, fid as String) as Boole
     serId = SafeStr(fav["series_id"])
     cid = sid
     if favType = "series" and serId <> "" then cid = serId
-    return cid = fid
+    if cid <> fid then return false
+    return fav["profileId"] = invalid or fav["profileId"] = profileId
 end function
 
 ' Actualiza progreso ya conocido localmente, o lo reconstruye vía Xtream
@@ -344,7 +354,7 @@ end function
 ' puede RECIBIR "continuar viendo" marcado en otro dispositivo, no solo
 ' actualizar lo que ya existía aquí. Devuelve false si no se pudo resolver
 ' (para reintentar en el próximo sync sin perder el item).
-function applyPulledProgress(creds as Object, item as Object) as Boolean
+function applyPulledProgress(creds as Object, item as Object, profileId as String) as Boolean
     key = SafeStr(item.canonicalKey)
     if key = "" then return false
 
@@ -355,13 +365,14 @@ function applyPulledProgress(creds as Object, item as Object) as Boolean
     items = LoadContinueList()
     match = invalid
     for each e in items
-        if SafeStr(e["key"]) = key then match = e
+        owned = e["profileId"] = invalid or e["profileId"] = profileId
+        if SafeStr(e["key"]) = key and owned then match = e
     end for
 
     if item.deletedAt <> invalid
         if match <> invalid then RemoveContinueEntry(key)
         sec = CreateObject("roRegistrySection", "progress")
-        sec.Delete(key)
+        sec.Delete(ProgressPositionKey(profileId, key))
         sec.Flush()
         return true
     end if
@@ -408,11 +419,11 @@ function applyPulledProgress(creds as Object, item as Object) as Boolean
 
     posVal = item.posicionSegundos
     sec = CreateObject("roRegistrySection", "progress")
-    curStr = sec.Read(key)
+    curStr = sec.Read(ProgressPositionKey(profileId, key))
     curVal = 0
     if curStr <> "" then curVal = Val(curStr)
     if posVal > curVal
-        sec.Write(key, Str(posVal))
+        sec.Write(ProgressPositionKey(profileId, key), Str(posVal))
         sec.Flush()
     end if
 
@@ -430,7 +441,7 @@ end function
 ' marcados en otro dispositivo). "live" no se reconstruye (Roku no soporta
 ' favoritos de canales en vivo), se trata como resuelto para no bloquear el
 ' cursor con algo que este cliente nunca podrá aplicar.
-function applyPulledFavorite(creds as Object, item as Object) as Boolean
+function applyPulledFavorite(creds as Object, item as Object, profileId as String) as Boolean
     key = SafeStr(item.canonicalKey)
     if key = "" then return false
     parts = key.Split(":")
@@ -444,7 +455,7 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
             favs = LoadFavorites()
             matchId = invalid
             for each fav in favs
-                if IsFavoriteMatch(fav, ftype, fid) then matchId = SafeStr(fav["id"])
+                if IsFavoriteMatch(fav, ftype, fid, profileId) then matchId = SafeStr(fav["id"])
             end for
             if matchId = invalid then return true
             newFavs = []
@@ -470,7 +481,7 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
     favs = LoadFavorites()
     existingIdx = -1
     for i = 0 to favs.Count() - 1
-        if IsFavoriteMatch(favs[i], ftype, fid) then existingIdx = i
+        if IsFavoriteMatch(favs[i], ftype, fid, profileId) then existingIdx = i
     end for
 
     if existingIdx >= 0
@@ -480,10 +491,11 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
             favs = LoadFavorites()
             idx = -1
             for i = 0 to favs.Count() - 1
-                if IsFavoriteMatch(favs[i], ftype, fid) then idx = i
+                if IsFavoriteMatch(favs[i], ftype, fid, profileId) then idx = i
             end for
             if idx < 0 or favs[idx]["deletedAt"] = invalid then return true
             favs[idx]["deletedAt"] = invalid
+            favs[idx]["profileId"] = profileId
             if favs[idx]["createdAt"] = invalid then favs[idx]["createdAt"] = item.createdAt
             if attempt = 5
                 SaveFavorites(favs)
@@ -507,7 +519,8 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
             series_id: "",
             container_extension: info.ext,
             createdAt: item.createdAt,
-            deletedAt: invalid
+            deletedAt: invalid,
+            profileId: profileId
         }
     else if ftype = "series"
         info = ResolveSeriesBasicInfo(creds, fid)
@@ -521,7 +534,8 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
             series_id: fid,
             container_extension: "",
             createdAt: item.createdAt,
-            deletedAt: invalid
+            deletedAt: invalid,
+            profileId: profileId
         }
     else
         return true
@@ -532,7 +546,7 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
         favs = LoadFavorites()
         already = false
         for each fav in favs
-            if IsFavoriteMatch(fav, ftype, fid) then already = true
+            if IsFavoriteMatch(fav, ftype, fid, profileId) then already = true
         end for
         if already then return true
         favs.Push(newFav)

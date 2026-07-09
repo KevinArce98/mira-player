@@ -80,10 +80,12 @@ function SaveFavoritesCAS(items as Object, expectedRev as String) as Boolean
 end function
 
 function IsFavorite(id as String) as Boolean
+    profileId = GetActiveProfileId()
     favs = LoadFavorites()
     for each fav in favs
         if type(fav) = "roAssociativeArray"
-            if SafeStr(fav["id"]) = id and fav["deletedAt"] = invalid then return true
+            owned = fav["profileId"] = invalid or fav["profileId"] = profileId
+            if SafeStr(fav["id"]) = id and fav["deletedAt"] = invalid and owned then return true
         else
             if SafeStr(fav) = id then return true
         end if
@@ -92,6 +94,7 @@ function IsFavorite(id as String) as Boolean
 end function
 
 function ToggleFavorite(id as String, contentType as String, item as Object) as Boolean
+    profileId = GetActiveProfileId()
     for attempt = 1 to 5
         rev = LoadFavoritesRev()
         favs = LoadFavorites()
@@ -100,10 +103,12 @@ function ToggleFavorite(id as String, contentType as String, item as Object) as 
         for each fav in favs
             if type(fav) = "roAssociativeArray"
                 favId = SafeStr(fav["id"])
+                owned = fav["profileId"] = invalid or fav["profileId"] = profileId
             else
                 favId = SafeStr(fav)
+                owned = true
             end if
-            if favId = id
+            if favId = id and owned
                 existing = fav
             else
                 newFavs.Push(fav)
@@ -139,7 +144,8 @@ function ToggleFavorite(id as String, contentType as String, item as Object) as 
                 series_id: serId,
                 container_extension: ext,
                 createdAt: createdAt,
-                deletedAt: NowEpochMs()
+                deletedAt: NowEpochMs(),
+                profileId: profileId
             })
         else
             createdAt = NowEpochMs()
@@ -156,7 +162,8 @@ function ToggleFavorite(id as String, contentType as String, item as Object) as 
                 series_id: SafeStr(item["series_id"]),
                 container_extension: SafeStr(item["container_extension"]),
                 createdAt: createdAt,
-                deletedAt: invalid
+                deletedAt: invalid,
+                profileId: profileId
             })
         end if
 
@@ -313,10 +320,14 @@ function LoadContinueList() as Object
 end function
 
 function SaveContinueEntry(entry as Object) as Void
+    profileId = GetActiveProfileId()
+    entry["profileId"] = profileId
     items = LoadContinueList()
     rest = []
     for each item in items
-        if SafeStr(item["key"]) <> SafeStr(entry["key"]) then rest.Push(item)
+        sameKey = SafeStr(item["key"]) = SafeStr(entry["key"])
+        owned = item["profileId"] = invalid or item["profileId"] = profileId
+        if not (sameKey and owned) then rest.Push(item)
     end for
 
     newItems = [entry]
@@ -339,13 +350,17 @@ function SaveContinueEntry(entry as Object) as Void
 end function
 
 function RemoveContinueEntry(key as String) as Void
+    profileId = GetActiveProfileId()
     items = LoadContinueList()
     newItems = []
     for each item in items
-        if SafeStr(item["key"]) = key
+        sameKey = SafeStr(item["key"]) = key
+        owned = item["profileId"] = invalid or item["profileId"] = profileId
+        if sameKey and owned
             item["deletedAt"] = NowEpochMs()
             item["updatedAt"] = NowEpochMs()
             item["syncedAt"] = invalid
+            item["profileId"] = profileId
         end if
         newItems.Push(item)
     end for
@@ -354,13 +369,15 @@ function RemoveContinueEntry(key as String) as Void
     sec.Flush()
 end function
 
-sub MarkAllContinueEntriesSynced() as Void
+sub MarkAllContinueEntriesSynced(profileId as String) as Void
     items = LoadContinueList()
     changed = false
     now = NowEpochMs()
     for each item in items
-        if item["syncedAt"] = invalid
+        owned = item["profileId"] = invalid or item["profileId"] = profileId
+        if item["syncedAt"] = invalid and owned
             item["syncedAt"] = now
+            item["profileId"] = profileId
             changed = true
         end if
     end for
@@ -370,6 +387,10 @@ sub MarkAllContinueEntriesSynced() as Void
         sec.Flush()
     end if
 end sub
+
+function ProgressPositionKey(profileId as String, key as String) as String
+    return profileId + ":" + key
+end function
 
 ' --- Sincronización multi-dispositivo ---
 

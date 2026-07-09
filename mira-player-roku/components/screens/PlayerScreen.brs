@@ -242,7 +242,7 @@ sub progressSave()
     posVal = m.video.position
     if posVal < 30 then return
     sec = CreateObject("roRegistrySection", "progress")
-    sec.Write(key, Str(posVal))
+    sec.Write(ProgressPositionKey(GetActiveProfileId(), key), Str(posVal))
     sec.Flush()
     SaveContinueEntry({
         key: key,
@@ -263,7 +263,7 @@ function progressLoad() as Float
     key = progressKey()
     if key = "" then return 0.0
     sec = CreateObject("roRegistrySection", "progress")
-    stored = sec.Read(key)
+    stored = sec.Read(ProgressPositionKey(GetActiveProfileId(), key))
     if stored = "" then return 0.0
     return Val(stored)
 end function
@@ -272,7 +272,7 @@ sub progressClear()
     key = progressKey()
     if key = "" then return
     sec = CreateObject("roRegistrySection", "progress")
-    sec.Delete(key)
+    sec.Delete(ProgressPositionKey(GetActiveProfileId(), key))
     sec.Flush()
 end sub
 
