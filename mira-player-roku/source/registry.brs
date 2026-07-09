@@ -54,54 +54,119 @@ end function
 
 function SaveFavorites(items as Object) as Void
     sec = CreateObject("roRegistrySection", "favorites")
+    rev = sec.Read("rev")
+    if rev = "" then rev = "0"
     sec.Write("items", FormatJSON(items))
+    sec.Write("rev", (Val(rev) + 1).ToStr())
     sec.Flush()
+end function
+
+function LoadFavoritesRev() as String
+    sec = CreateObject("roRegistrySection", "favorites")
+    rev = sec.Read("rev")
+    if rev = "" then return "0"
+    return rev
+end function
+
+function SaveFavoritesCAS(items as Object, expectedRev as String) as Boolean
+    sec = CreateObject("roRegistrySection", "favorites")
+    currentRev = sec.Read("rev")
+    if currentRev = "" then currentRev = "0"
+    if currentRev <> expectedRev then return false
+    sec.Write("items", FormatJSON(items))
+    sec.Write("rev", (Val(currentRev) + 1).ToStr())
+    sec.Flush()
+    return true
 end function
 
 function IsFavorite(id as String) as Boolean
     favs = LoadFavorites()
     for each fav in favs
         if type(fav) = "roAssociativeArray"
-            favId = SafeStr(fav["id"])
+            if SafeStr(fav["id"]) = id and fav["deletedAt"] = invalid then return true
         else
-            favId = SafeStr(fav)
+            if SafeStr(fav) = id then return true
         end if
-        if favId = id then return true
     end for
     return false
 end function
 
 function ToggleFavorite(id as String, contentType as String, item as Object) as Boolean
-    favs = LoadFavorites()
-    newFavs = []
-    found = false
-    for each fav in favs
-        if type(fav) = "roAssociativeArray"
-            favId = SafeStr(fav["id"])
+    for attempt = 1 to 5
+        rev = LoadFavoritesRev()
+        favs = LoadFavorites()
+        newFavs = []
+        existing = invalid
+        for each fav in favs
+            if type(fav) = "roAssociativeArray"
+                favId = SafeStr(fav["id"])
+            else
+                favId = SafeStr(fav)
+            end if
+            if favId = id
+                existing = fav
+            else
+                newFavs.Push(fav)
+            end if
+        end for
+
+        isActive = (existing <> invalid) and (type(existing) <> "roAssociativeArray" or existing["deletedAt"] = invalid)
+        result = not isActive
+
+        if isActive
+            icon = ""
+            name = ""
+            ftype = contentType
+            sid = ""
+            serId = ""
+            ext = ""
+            createdAt = NowEpochMs()
+            if type(existing) = "roAssociativeArray"
+                icon = SafeStr(existing["icon"])
+                name = SafeStr(existing["name"])
+                ftype = SafeStr(existing["type"])
+                sid = SafeStr(existing["stream_id"])
+                serId = SafeStr(existing["series_id"])
+                ext = SafeStr(existing["container_extension"])
+                if existing["createdAt"] <> invalid then createdAt = existing["createdAt"]
+            end if
+            newFavs.Push({
+                id: id,
+                type: ftype,
+                name: name,
+                icon: icon,
+                stream_id: sid,
+                series_id: serId,
+                container_extension: ext,
+                createdAt: createdAt,
+                deletedAt: NowEpochMs()
+            })
         else
-            favId = SafeStr(fav)
+            createdAt = NowEpochMs()
+            if existing <> invalid and type(existing) = "roAssociativeArray" and existing["createdAt"] <> invalid then createdAt = existing["createdAt"]
+
+            icon = SafeStr(item["stream_icon"])
+            if icon = "" then icon = SafeStr(item["cover"])
+            newFavs.Push({
+                id: id,
+                type: contentType,
+                name: SafeStr(item["name"]),
+                icon: icon,
+                stream_id: SafeStr(item["stream_id"]),
+                series_id: SafeStr(item["series_id"]),
+                container_extension: SafeStr(item["container_extension"]),
+                createdAt: createdAt,
+                deletedAt: invalid
+            })
         end if
-        if favId = id
-            found = true
-        else
-            newFavs.Push(fav)
+
+        if attempt = 5
+            SaveFavorites(newFavs)
+            return result
         end if
+        if SaveFavoritesCAS(newFavs, rev) then return result
     end for
-    if not found
-        icon = SafeStr(item["stream_icon"])
-        if icon = "" then icon = SafeStr(item["cover"])
-        newFavs.Push({
-            id: id,
-            type: contentType,
-            name: SafeStr(item["name"]),
-            icon: icon,
-            stream_id: SafeStr(item["stream_id"]),
-            series_id: SafeStr(item["series_id"]),
-            container_extension: SafeStr(item["container_extension"])
-        })
-    end if
-    SaveFavorites(newFavs)
-    return not found
+    return false
 end function
 
 function SaveBrowseState(tipo as String, categoryId as String, sortMode as String) as Void
@@ -195,8 +260,37 @@ function VerifyParentalPin(pin as String) as Boolean
     return HashParentalPin(pin, salt) = stored
 end function
 
+function StripDiacritics(s as String) as String
+    result = s
+    result = result.Replace("á", "a")
+    result = result.Replace("Á", "a")
+    result = result.Replace("à", "a")
+    result = result.Replace("À", "a")
+    result = result.Replace("é", "e")
+    result = result.Replace("É", "e")
+    result = result.Replace("è", "e")
+    result = result.Replace("È", "e")
+    result = result.Replace("í", "i")
+    result = result.Replace("Í", "i")
+    result = result.Replace("ì", "i")
+    result = result.Replace("Ì", "i")
+    result = result.Replace("ó", "o")
+    result = result.Replace("Ó", "o")
+    result = result.Replace("ò", "o")
+    result = result.Replace("Ò", "o")
+    result = result.Replace("ú", "u")
+    result = result.Replace("Ú", "u")
+    result = result.Replace("ù", "u")
+    result = result.Replace("Ù", "u")
+    result = result.Replace("ü", "u")
+    result = result.Replace("Ü", "u")
+    result = result.Replace("ñ", "n")
+    result = result.Replace("Ñ", "n")
+    return result
+end function
+
 function IsAdultCategoryName(name as String) as Boolean
-    lower = lcase(name)
+    lower = lcase(StripDiacritics(name))
     keywords = ["adult", "xxx", "porn", "eroti", "18+", "+18"]
     for each kw in keywords
         if instr(lower, kw) > 0 then return true
@@ -220,12 +314,25 @@ end function
 
 function SaveContinueEntry(entry as Object) as Void
     items = LoadContinueList()
-    newItems = [entry]
+    rest = []
     for each item in items
-        if SafeStr(item["key"]) <> SafeStr(entry["key"]) and newItems.Count() < 10
+        if SafeStr(item["key"]) <> SafeStr(entry["key"]) then rest.Push(item)
+    end for
+
+    newItems = [entry]
+    synced = []
+    for each item in rest
+        if item["syncedAt"] = invalid
             newItems.Push(item)
+        else
+            synced.Push(item)
         end if
     end for
+    for each item in synced
+        if newItems.Count() >= 10 then exit for
+        newItems.Push(item)
+    end for
+
     sec = CreateObject("roRegistrySection", "continuar")
     sec.Write("items", FormatJSON(newItems))
     sec.Flush()
@@ -235,14 +342,34 @@ function RemoveContinueEntry(key as String) as Void
     items = LoadContinueList()
     newItems = []
     for each item in items
-        if SafeStr(item["key"]) <> key
-            newItems.Push(item)
+        if SafeStr(item["key"]) = key
+            item["deletedAt"] = NowEpochMs()
+            item["updatedAt"] = NowEpochMs()
+            item["syncedAt"] = invalid
         end if
+        newItems.Push(item)
     end for
     sec = CreateObject("roRegistrySection", "continuar")
     sec.Write("items", FormatJSON(newItems))
     sec.Flush()
 end function
+
+sub MarkAllContinueEntriesSynced() as Void
+    items = LoadContinueList()
+    changed = false
+    now = NowEpochMs()
+    for each item in items
+        if item["syncedAt"] = invalid
+            item["syncedAt"] = now
+            changed = true
+        end if
+    end for
+    if changed
+        sec = CreateObject("roRegistrySection", "continuar")
+        sec.Write("items", FormatJSON(items))
+        sec.Flush()
+    end if
+end sub
 
 ' --- Sincronización multi-dispositivo ---
 
@@ -309,36 +436,71 @@ end function
 
 sub SaveProfiles(profiles as Object) as Void
     sec = CreateObject("roRegistrySection", "profiles")
+    rev = sec.Read("rev")
+    if rev = "" then rev = "0"
     sec.Write("items", FormatJSON(profiles))
+    sec.Write("rev", (Val(rev) + 1).ToStr())
     sec.Flush()
 end sub
 
+function LoadProfilesRev() as String
+    sec = CreateObject("roRegistrySection", "profiles")
+    rev = sec.Read("rev")
+    if rev = "" then return "0"
+    return rev
+end function
+
+function SaveProfilesCAS(profiles as Object, expectedRev as String) as Boolean
+    sec = CreateObject("roRegistrySection", "profiles")
+    currentRev = sec.Read("rev")
+    if currentRev = "" then currentRev = "0"
+    if currentRev <> expectedRev then return false
+    sec.Write("items", FormatJSON(profiles))
+    sec.Write("rev", (Val(currentRev) + 1).ToStr())
+    sec.Flush()
+    return true
+end function
+
 function UpsertProfile(id as String, nombre as String) as Object
-    profiles = LoadProfiles()
-    newProfiles = []
-    found = invalid
-    for each p in profiles
-        if SafeStr(p["id"]) = id
-            p["nombre"] = nombre
-            found = p
+    for attempt = 1 to 5
+        rev = LoadProfilesRev()
+        profiles = LoadProfiles()
+        newProfiles = []
+        found = invalid
+        for each p in profiles
+            if SafeStr(p["id"]) = id
+                p["nombre"] = nombre
+                found = p
+            end if
+            newProfiles.Push(p)
+        end for
+        if found = invalid
+            found = {id: id, nombre: nombre}
+            newProfiles.Push(found)
         end if
-        newProfiles.Push(p)
+        if attempt = 5
+            SaveProfiles(newProfiles)
+            return found
+        end if
+        if SaveProfilesCAS(newProfiles, rev) then return found
     end for
-    if found = invalid
-        found = {id: id, nombre: nombre}
-        newProfiles.Push(found)
-    end if
-    SaveProfiles(newProfiles)
     return found
 end function
 
 sub DeleteLocalProfile(id as String) as Void
-    profiles = LoadProfiles()
-    newProfiles = []
-    for each p in profiles
-        if SafeStr(p["id"]) <> id then newProfiles.Push(p)
+    for attempt = 1 to 5
+        rev = LoadProfilesRev()
+        profiles = LoadProfiles()
+        newProfiles = []
+        for each p in profiles
+            if SafeStr(p["id"]) <> id then newProfiles.Push(p)
+        end for
+        if attempt = 5
+            SaveProfiles(newProfiles)
+            return
+        end if
+        if SaveProfilesCAS(newProfiles, rev) then return
     end for
-    SaveProfiles(newProfiles)
 end sub
 
 ' Epoch en milisegundos (LongInteger: segundos*1000 desborda un Integer de 32

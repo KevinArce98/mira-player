@@ -185,12 +185,14 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
             if posStr <> "" then posVal = Val(posStr)
             duracionTotal = invalid
             if durationSecs > 0 then duracionTotal = durationSecs
-            progressArr.Push({"canonicalKey": key, "posicionSegundos": int(posVal), "duracionTotal": duracionTotal, "completado": completadoVal, "lastWatchedAt": updatedAt, "deletedAt": invalid})
+            deletedAt = entry["deletedAt"]
+            progressArr.Push({"canonicalKey": key, "posicionSegundos": int(posVal), "duracionTotal": duracionTotal, "completado": completadoVal, "lastWatchedAt": updatedAt, "deletedAt": deletedAt})
         end if
     end for
 
     favs = LoadFavorites()
     favArr = []
+    favsChanged = false
     for each fav in favs
         if type(fav) = "roAssociativeArray"
             ftype = SafeStr(fav["type"])
@@ -199,10 +201,28 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
             canonicalId = sid
             if ftype = "series" and serId <> "" then canonicalId = serId
             if ftype <> "" and canonicalId <> ""
-                favArr.Push({"canonicalKey": ftype + ":" + canonicalId, "createdAt": NowEpochMs(), "deletedAt": invalid})
+                if fav["createdAt"] = invalid
+                    fav["createdAt"] = NowEpochMs()
+                    favsChanged = true
+                end if
+                favArr.Push({"canonicalKey": ftype + ":" + canonicalId, "createdAt": fav["createdAt"], "deletedAt": fav["deletedAt"]})
             end if
         end if
     end for
+    if favsChanged
+        for attempt = 1 to 5
+            rev = LoadFavoritesRev()
+            favs2 = LoadFavorites()
+            for each fav in favs2
+                if type(fav) = "roAssociativeArray" and fav["createdAt"] = invalid then fav["createdAt"] = NowEpochMs()
+            end for
+            if attempt = 5
+                SaveFavorites(favs2)
+                exit for
+            end if
+            if SaveFavoritesCAS(favs2, rev) then exit for
+        end for
+    end if
 
     if progressArr.Count() = 0 and favArr.Count() = 0 then return true
 
@@ -210,6 +230,8 @@ function doPush(baseUrl as String, secret as String, profileId as String) as Boo
     res = HttpPostJson(baseUrl + "/sync/push", AuthHeader(secret), body)
     if res = invalid then return false
     if res.status = 401 then return false
+    if res.status < 200 or res.status >= 300 then return false
+    MarkAllContinueEntriesSynced()
     return true
 end function
 
@@ -397,6 +419,8 @@ function applyPulledProgress(creds as Object, item as Object) as Boolean
     if item.duracionTotal <> invalid then match["durationSecs"] = item.duracionTotal
     match["updatedAt"] = item.lastWatchedAt
     match["completado"] = (item.completado = true)
+    match["deletedAt"] = invalid
+    match["syncedAt"] = NowEpochMs()
     SaveContinueEntry(match)
     return true
 end function
@@ -414,14 +438,15 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
     ftype = parts[0]
     fid = parts[1]
 
-    favs = LoadFavorites()
-
     if item.deletedAt <> invalid
-        matchId = invalid
-        for each fav in favs
-            if IsFavoriteMatch(fav, ftype, fid) then matchId = SafeStr(fav["id"])
-        end for
-        if matchId <> invalid
+        for attempt = 1 to 5
+            rev = LoadFavoritesRev()
+            favs = LoadFavorites()
+            matchId = invalid
+            for each fav in favs
+                if IsFavoriteMatch(fav, ftype, fid) then matchId = SafeStr(fav["id"])
+            end for
+            if matchId = invalid then return true
             newFavs = []
             for each fav in favs
                 if type(fav) = "roAssociativeArray"
@@ -431,16 +456,43 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
                 end if
                 if favId <> matchId then newFavs.Push(fav)
             end for
-            SaveFavorites(newFavs)
-        end if
+            if attempt = 5
+                SaveFavorites(newFavs)
+                return true
+            end if
+            if SaveFavoritesCAS(newFavs, rev) then return true
+        end for
         return true
     end if
 
     if ftype = "live" then return true
 
-    for each fav in favs
-        if IsFavoriteMatch(fav, ftype, fid) then return true
+    favs = LoadFavorites()
+    existingIdx = -1
+    for i = 0 to favs.Count() - 1
+        if IsFavoriteMatch(favs[i], ftype, fid) then existingIdx = i
     end for
+
+    if existingIdx >= 0
+        if favs[existingIdx]["deletedAt"] = invalid then return true
+        for attempt = 1 to 5
+            rev = LoadFavoritesRev()
+            favs = LoadFavorites()
+            idx = -1
+            for i = 0 to favs.Count() - 1
+                if IsFavoriteMatch(favs[i], ftype, fid) then idx = i
+            end for
+            if idx < 0 or favs[idx]["deletedAt"] = invalid then return true
+            favs[idx]["deletedAt"] = invalid
+            if favs[idx]["createdAt"] = invalid then favs[idx]["createdAt"] = item.createdAt
+            if attempt = 5
+                SaveFavorites(favs)
+                return true
+            end if
+            if SaveFavoritesCAS(favs, rev) then return true
+        end for
+        return true
+    end if
 
     di = CreateObject("roDeviceInfo")
     if ftype = "movie"
@@ -453,7 +505,9 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
             icon: info.icon,
             stream_id: fid,
             series_id: "",
-            container_extension: info.ext
+            container_extension: info.ext,
+            createdAt: item.createdAt,
+            deletedAt: invalid
         }
     else if ftype = "series"
         info = ResolveSeriesBasicInfo(creds, fid)
@@ -465,13 +519,28 @@ function applyPulledFavorite(creds as Object, item as Object) as Boolean
             icon: info.icon,
             stream_id: "",
             series_id: fid,
-            container_extension: ""
+            container_extension: "",
+            createdAt: item.createdAt,
+            deletedAt: invalid
         }
     else
         return true
     end if
 
-    favs.Push(newFav)
-    SaveFavorites(favs)
+    for attempt = 1 to 5
+        rev = LoadFavoritesRev()
+        favs = LoadFavorites()
+        already = false
+        for each fav in favs
+            if IsFavoriteMatch(fav, ftype, fid) then already = true
+        end for
+        if already then return true
+        favs.Push(newFav)
+        if attempt = 5
+            SaveFavorites(favs)
+            return true
+        end if
+        if SaveFavoritesCAS(favs, rev) then return true
+    end for
     return true
 end function

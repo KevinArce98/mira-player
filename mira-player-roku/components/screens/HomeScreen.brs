@@ -83,7 +83,7 @@ sub loadContinueDisplay()
     all = LoadContinueList()
     items = []
     for each entry in all
-        if entry["completado"] <> true then items.Push(entry)
+        if entry["completado"] <> true and entry["deletedAt"] = invalid then items.Push(entry)
     end for
     m.filteredContinue = items
 
@@ -192,7 +192,11 @@ sub onRemoveContinueConfirm()
 end sub
 
 sub loadFavoritesDisplay()
-    favs = LoadFavorites()
+    all = LoadFavorites()
+    favs = []
+    for each fav in all
+        if type(fav) <> "roAssociativeArray" or fav["deletedAt"] = invalid then favs.Push(fav)
+    end for
     if favs.Count() = 0
         m.favGrid.visible = false
         m.favLabel.visible = false
