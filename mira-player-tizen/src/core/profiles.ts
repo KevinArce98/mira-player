@@ -33,14 +33,23 @@ export function upsertProfile(
 ): Perfil {
   const profiles = read(acct);
   const idx = profiles.findIndex((p) => p.id === input.id);
-  const now = Date.now();
+  const existing = idx >= 0 ? profiles[idx] : null;
+  const avatar = input.avatar ?? null;
+  const isKids = input.isKids ?? false;
+  const deletedAt = input.deletedAt ?? null;
+  const changed =
+    !existing ||
+    existing.nombre !== input.nombre ||
+    existing.avatar !== avatar ||
+    existing.isKids !== isKids ||
+    existing.deletedAt !== deletedAt;
   const profile: Perfil = {
     id: input.id,
     nombre: input.nombre,
-    avatar: input.avatar ?? null,
-    isKids: input.isKids ?? false,
-    updatedAt: now,
-    deletedAt: input.deletedAt ?? null,
+    avatar,
+    isKids,
+    updatedAt: changed ? Date.now() : (existing?.updatedAt ?? Date.now()),
+    deletedAt,
   };
   if (idx >= 0) profiles[idx] = profile;
   else profiles.push(profile);

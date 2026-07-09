@@ -1,11 +1,18 @@
 import { getSession, type Session } from '@/core/session';
 import { loadAccount } from '@/core/store';
 import { progressKey, type MediaItem, type ResumePayload } from '@/core/media';
-import { listAllProgressEntries, applyRemoteProgress } from '@/core/progress';
+import { listAllProgressEntries, applyRemoteProgress, markAllSynced } from '@/core/progress';
 import { listAllFavoriteEntries, applyRemoteFavorite } from '@/core/favorites';
 import { listProfiles, upsertProfile } from '@/core/profiles';
 import { buildFavoriteCanonicalKey } from './canonical';
-import { getActiveProfileId, getCursor, setActiveProfileId, setCursor } from './sync-meta';
+import {
+  getActiveProfileId,
+  getCursor,
+  getStalledSince,
+  setActiveProfileId,
+  setCursor,
+  setStalledSince,
+} from './sync-meta';
 import { deleteSyncSecret, getSyncSecret } from './secret-store';
 import { isSyncConfigured } from './config';
 import { fetchProfiles, pull, push, type PushFavorite, type PushProgress } from './client';
@@ -84,7 +91,7 @@ async function pushAll(secret: string, profileId: string, acctKey: string): Prom
     duracionTotal: e.durationMs > 0 ? Math.round(e.durationMs / 1000) : null,
     completado: Boolean(e.completado),
     lastWatchedAt: e.updatedAt,
-    deletedAt: null,
+    deletedAt: e.deletedAt,
   }));
 
   const favorites: PushFavorite[] = listAllFavoriteEntries(acctKey).map((e) => ({
@@ -95,6 +102,7 @@ async function pushAll(secret: string, profileId: string, acctKey: string): Prom
 
   if (progress.length === 0 && favorites.length === 0) return;
   await push(secret, { profileId, progress, favorites });
+  markAllSynced(acctKey, Date.now());
 }
 
 async function pullProfiles(secret: string, acctKey: string): Promise<void> {
@@ -116,6 +124,7 @@ async function pullProfiles(secret: string, acctKey: string): Promise<void> {
     setActiveProfileId(acctKey, fallback);
   }
 }
+const STALL_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 
 async function pullAndApply(
   secret: string,
@@ -135,9 +144,26 @@ async function pullAndApply(
   }
 
   if (allResolved) {
+    setStalledSince(profileId, null);
     setCursor(profileId, result.cursor);
-  } else {
+    return;
+  }
+
+  const stalledSince = getStalledSince(profileId);
+  if (stalledSince === null) {
+    setStalledSince(profileId, Date.now());
     console.warn('[sync] some pulled items could not resolve to local content, will retry next sync');
+    return;
+  }
+
+  if (Date.now() - stalledSince > STALL_TIMEOUT_MS) {
+    console.warn('[sync] giving up on unresolved pulled items after 24h, forcing cursor forward', {
+      profileId,
+      since,
+      newCursor: result.cursor,
+    });
+    setStalledSince(profileId, null);
+    setCursor(profileId, result.cursor);
   }
 }
 
@@ -186,6 +212,8 @@ async function applyPulledProgress(acctKey: string, session: Session, item: Push
         durationMs,
         updatedAt: item.lastWatchedAt,
         completado: item.completado,
+        deletedAt: item.deletedAt,
+        syncedAt: Date.now(),
       });
       return true;
     }
@@ -222,6 +250,8 @@ async function applyPulledProgress(acctKey: string, session: Session, item: Push
       durationMs,
       updatedAt: item.lastWatchedAt,
       completado: item.completado,
+      deletedAt: item.deletedAt,
+      syncedAt: Date.now(),
     });
     return true;
   } catch (err) {
