@@ -5,13 +5,16 @@ import { isFavorite } from '@/db/repositories/favorites';
 import { getProgress, setCompleted } from '@/db/repositories/progress';
 import { queryKeys } from '@/lib/query-client';
 import { loadContentDetails } from '@/services/content-details';
+import { useParental } from '@/providers/parental';
 import type { ContentType } from '@/types/models';
 
 export function useContent(id: string | undefined) {
+  const { filter, ready } = useParental();
+  const fingerprint = filter ? `p:${filter.blockedCategoryIds.join(',')}` : 'p:off';
   return useQuery({
-    queryKey: ['content', id],
-    queryFn: () => getContentById(id!),
-    enabled: !!id,
+    queryKey: ['content', id, fingerprint],
+    queryFn: () => getContentById(id!, filter),
+    enabled: !!id && ready,
   });
 }
 

@@ -94,6 +94,8 @@ export function useSwitchProfile() {
       qc.invalidateQueries({ queryKey: queryKeys.activeProfile });
       qc.invalidateQueries({ queryKey: queryKeys.continueWatching });
       qc.invalidateQueries({ queryKey: queryKeys.favorites });
+      qc.invalidateQueries({ queryKey: ['progress'] });
+      qc.invalidateQueries({ queryKey: ['series-progress'] });
       requestSync();
     },
   });

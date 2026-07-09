@@ -175,9 +175,18 @@ export async function searchAllContent(
   );
 }
 
-export async function getContentById(id: string): Promise<Contenido | null> {
+export async function getContentById(
+  id: string,
+  parental?: ParentalFilter | null,
+): Promise<Contenido | null> {
   const db = await getDatabase();
-  const row = await db.getFirstAsync<Contenido>('SELECT * FROM contenido WHERE id = ?;', [id]);
+  const params: (string | number)[] = [id];
+  const extraClauses = parentalClauses(parental, params);
+  const extraWhere = extraClauses.length > 0 ? ` AND ${extraClauses.join(' AND ')}` : '';
+  const row = await db.getFirstAsync<Contenido>(
+    `SELECT * FROM contenido WHERE id = ?${extraWhere};`,
+    params,
+  );
   return row ?? null;
 }
 

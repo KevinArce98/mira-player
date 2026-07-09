@@ -31,8 +31,8 @@ export async function saveProgress(update: ProgressUpdate): Promise<void> {
        SET posicion_segundos = ?, duracion_total = COALESCE(?, duracion_total),
            completado = ?, last_watched_at = ?, updated_at = ?, deleted_at = NULL, dirty = 1,
            profile_id = COALESCE(profile_id, ?)
-     WHERE ${matchClause};`,
-    [update.posicionSegundos, update.duracionTotal ?? null, completado ? 1 : 0, now, now, profileId, matchParam],
+     WHERE ${matchClause} AND (profile_id IS NULL OR profile_id = ?);`,
+    [update.posicionSegundos, update.duracionTotal ?? null, completado ? 1 : 0, now, now, profileId, matchParam, profileId],
   );
 
   if (result.changes === 0) {
@@ -59,8 +59,8 @@ export async function setCompleted(
 
   const result = await db.runAsync(
     `UPDATE progreso SET completado = ?, last_watched_at = ?, updated_at = ?, dirty = 1,
-       profile_id = COALESCE(profile_id, ?) WHERE ${matchClause};`,
-    [completado ? 1 : 0, now, now, profileId, matchParam],
+       profile_id = COALESCE(profile_id, ?) WHERE ${matchClause} AND (profile_id IS NULL OR profile_id = ?);`,
+    [completado ? 1 : 0, now, now, profileId, matchParam, profileId],
   );
 
   if (result.changes === 0) {
@@ -79,21 +79,24 @@ export async function getProgress(
   episodeId: string | null = null,
 ): Promise<Progreso | null> {
   const db = await getDatabase();
+  const profileId = await getActiveProfileId();
   const matchClause = episodeId === null ? 'content_id = ? AND episode_id IS NULL' : 'episode_id = ?';
   const matchParam = episodeId === null ? contentId : episodeId;
-  const row = await db.getFirstAsync<Progreso>(`SELECT * FROM progreso WHERE ${matchClause};`, [
-    matchParam,
-  ]);
+  const row = await db.getFirstAsync<Progreso>(
+    `SELECT * FROM progreso WHERE ${matchClause} AND deleted_at IS NULL AND (profile_id IS NULL OR profile_id = ?);`,
+    [matchParam, profileId],
+  );
   return row ?? null;
 }
 
 export async function getSeriesEpisodeProgress(serieId: string): Promise<Record<string, Progreso>> {
   const db = await getDatabase();
+  const profileId = await getActiveProfileId();
   const rows = await db.getAllAsync<Progreso>(
     `SELECT p.* FROM progreso p
      JOIN episodios e ON e.id = p.episode_id
-     WHERE e.serie_id = ?;`,
-    [serieId],
+     WHERE e.serie_id = ? AND p.deleted_at IS NULL AND (p.profile_id IS NULL OR p.profile_id = ?);`,
+    [serieId, profileId],
   );
   const map: Record<string, Progreso> = {};
   for (const row of rows) {
@@ -110,7 +113,11 @@ export interface ContinueWatchingItem {
 
 export async function deleteProgress(progresoId: string): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM progreso WHERE id = ?;', [progresoId]);
+  const now = Date.now();
+  await db.runAsync(
+    'UPDATE progreso SET deleted_at = ?, updated_at = ?, dirty = 1 WHERE id = ?;',
+    [now, now, progresoId],
+  );
 }
 
 export async function getContinueWatching(

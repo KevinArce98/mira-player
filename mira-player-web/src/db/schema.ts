@@ -122,6 +122,27 @@ const MIGRATIONS: string[] = [
   CREATE INDEX idx_favoritos_profile ON favoritos(profile_id);
   CREATE INDEX idx_favoritos_dirty ON favoritos(dirty);
   `,
+
+  `
+  CREATE TABLE favoritos_new (
+    id TEXT PRIMARY KEY NOT NULL,
+    content_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    profile_id TEXT,
+    canonical_key TEXT,
+    updated_at INTEGER,
+    deleted_at INTEGER,
+    dirty INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (content_id) REFERENCES contenido(id) ON DELETE CASCADE,
+    UNIQUE (content_id, profile_id)
+  );
+  INSERT INTO favoritos_new (id, content_id, created_at, profile_id, canonical_key, updated_at, deleted_at, dirty)
+    SELECT id, content_id, created_at, profile_id, canonical_key, updated_at, deleted_at, dirty FROM favoritos;
+  DROP TABLE favoritos;
+  ALTER TABLE favoritos_new RENAME TO favoritos;
+  CREATE INDEX idx_favoritos_profile ON favoritos(profile_id);
+  CREATE INDEX idx_favoritos_dirty ON favoritos(dirty);
+  `,
 ];
 
 export async function runMigrations(db: WebDatabase): Promise<void> {

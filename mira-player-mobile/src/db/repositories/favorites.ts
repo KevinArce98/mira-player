@@ -6,9 +6,11 @@ import type { Contenido, Favorito } from '@/types/models';
 
 export async function isFavorite(contentId: string): Promise<boolean> {
   const db = await getDatabase();
+  const profileId = await getActiveProfileId();
   const row = await db.getFirstAsync<Favorito>(
-    'SELECT id FROM favoritos WHERE content_id = ? AND deleted_at IS NULL;',
-    [contentId],
+    `SELECT id FROM favoritos
+     WHERE content_id = ? AND deleted_at IS NULL AND (profile_id IS NULL OR profile_id = ?);`,
+    [contentId, profileId],
   );
   return row != null;
 }
@@ -17,19 +19,19 @@ export async function toggleFavorite(contentId: string): Promise<boolean> {
   const db = await getDatabase();
   const now = Date.now();
   const profileId = await getActiveProfileId();
-  const already = await isFavorite(contentId);
-  if (already) {
-    await db.runAsync(
-      'UPDATE favoritos SET deleted_at = ?, updated_at = ?, dirty = 1 WHERE content_id = ?;',
-      [now, now, contentId],
-    );
-    return false;
-  }
+
+  const result = await db.runAsync(
+    `UPDATE favoritos SET deleted_at = ?, updated_at = ?, dirty = 1, profile_id = COALESCE(profile_id, ?)
+     WHERE content_id = ? AND deleted_at IS NULL AND (profile_id IS NULL OR profile_id = ?);`,
+    [now, now, profileId, contentId, profileId],
+  );
+  if (result.changes > 0) return false;
+
   await db.runAsync(
     `INSERT INTO favoritos (id, content_id, created_at, profile_id, updated_at, deleted_at, dirty)
      VALUES (?, ?, ?, ?, ?, NULL, 1)
-     ON CONFLICT(content_id) DO UPDATE SET
-       created_at = excluded.created_at, profile_id = excluded.profile_id,
+     ON CONFLICT(content_id, profile_id) DO UPDATE SET
+       created_at = excluded.created_at,
        updated_at = excluded.updated_at, deleted_at = NULL, dirty = 1;`,
     [uuid(), contentId, now, profileId, now],
   );

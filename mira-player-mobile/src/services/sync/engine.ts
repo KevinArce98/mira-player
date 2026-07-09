@@ -4,12 +4,21 @@ import { applyServerProfile } from '@/db/repositories/profiles';
 import { uuid } from '@/lib/id';
 import { buildCanonicalKey } from '@/lib/canonical';
 import { queryClient, queryKeys } from '@/lib/query-client';
-import { ensureDefaultProfile, getActiveProfileId, getCursor, setCursor } from '@/db/repositories/sync-meta';
+import {
+  ensureDefaultProfile,
+  getActiveProfileId,
+  getCursor,
+  getStalledSince,
+  setCursor,
+  setStalledSince,
+} from '@/db/repositories/sync-meta';
 import { deleteSyncSecret, getSyncSecret } from './secret-store';
 import { isSyncConfigured } from './config';
 import { parseCanonicalKey } from './keys';
 import { fetchProfiles, pull, push, type PushFavorite, type PushProgress } from './client';
 import { loadSeriesEpisodes } from '@/services/series';
+
+const STALL_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 
 function isUnauthorized(err: unknown): boolean {
   return typeof err === 'object' && err !== null && (err as { status?: number }).status === 401;
@@ -22,6 +31,7 @@ interface DirtyProgressRow {
   completado: number;
   last_watched_at: number;
   deleted_at: number | null;
+  updated_at: number | null;
   movie_tipo: string | null;
   movie_stream: number | null;
   serie_stream: number | null;
@@ -33,6 +43,7 @@ interface DirtyFavoriteRow {
   id: string;
   created_at: number;
   deleted_at: number | null;
+  updated_at: number | null;
   tipo: string;
   stream_id: number;
 }
@@ -101,7 +112,7 @@ async function pushDirty(secret: string, profileId: string): Promise<void> {
   const db = await getDatabase();
 
   const progressRows = await db.getAllAsync<DirtyProgressRow>(
-    `SELECT p.id, p.posicion_segundos, p.duracion_total, p.completado, p.last_watched_at, p.deleted_at,
+    `SELECT p.id, p.posicion_segundos, p.duracion_total, p.completado, p.last_watched_at, p.deleted_at, p.updated_at,
             cm.tipo AS movie_tipo, cm.stream_id AS movie_stream,
             s.stream_id AS serie_stream, e.temporada AS temp, e.episodio AS ep
      FROM progreso p
@@ -113,14 +124,14 @@ async function pushDirty(secret: string, profileId: string): Promise<void> {
   );
 
   const favoriteRows = await db.getAllAsync<DirtyFavoriteRow>(
-    `SELECT f.id, f.created_at, f.deleted_at, c.tipo, c.stream_id
+    `SELECT f.id, f.created_at, f.deleted_at, f.updated_at, c.tipo, c.stream_id
      FROM favoritos f JOIN contenido c ON c.id = f.content_id
      WHERE f.dirty = 1 AND f.profile_id = ?;`,
     [profileId],
   );
 
   const progress: PushProgress[] = [];
-  const progressIds: string[] = [];
+  const progressIds: [string, number | null][] = [];
   for (const r of progressRows) {
     const key = r.movie_tipo
       ? buildCanonicalKey(r.movie_tipo as 'movie', r.movie_stream as number)
@@ -136,36 +147,29 @@ async function pushDirty(secret: string, profileId: string): Promise<void> {
       lastWatchedAt: r.last_watched_at,
       deletedAt: r.deleted_at,
     });
-    progressIds.push(r.id);
+    progressIds.push([r.id, r.updated_at]);
   }
 
   const favorites: PushFavorite[] = [];
-  const favoriteIds: string[] = [];
+  const favoriteIds: [string, number | null][] = [];
   for (const r of favoriteRows) {
     favorites.push({
       canonicalKey: buildCanonicalKey(r.tipo as 'movie', r.stream_id),
       createdAt: r.created_at,
       deletedAt: r.deleted_at,
     });
-    favoriteIds.push(r.id);
+    favoriteIds.push([r.id, r.updated_at]);
   }
 
   if (progress.length === 0 && favorites.length === 0) return;
 
   await push(secret, { profileId, progress, favorites });
 
-  const clearIds = [...progressIds];
-  if (clearIds.length > 0) {
-    await db.runAsync(
-      `UPDATE progreso SET dirty = 0 WHERE id IN (${clearIds.map(() => '?').join(',')});`,
-      clearIds,
-    );
+  for (const [id, updatedAt] of progressIds) {
+    await db.runAsync(`UPDATE progreso SET dirty = 0 WHERE id = ? AND updated_at IS ?;`, [id, updatedAt]);
   }
-  if (favoriteIds.length > 0) {
-    await db.runAsync(
-      `UPDATE favoritos SET dirty = 0 WHERE id IN (${favoriteIds.map(() => '?').join(',')});`,
-      favoriteIds,
-    );
+  for (const [id, updatedAt] of favoriteIds) {
+    await db.runAsync(`UPDATE favoritos SET dirty = 0 WHERE id = ? AND updated_at IS ?;`, [id, updatedAt]);
   }
 }
 
@@ -197,9 +201,18 @@ async function pullAndApply(secret: string, profileId: string): Promise<void> {
   }
 
   if (allResolved) {
+    await setStalledSince(profileId, null);
     await setCursor(profileId, result.cursor);
   } else {
-    console.warn('[sync] some pulled items could not resolve to local content, will retry next sync');
+    const stalledSince = await getStalledSince(profileId);
+    if (stalledSince === null) {
+      await setStalledSince(profileId, Date.now());
+      console.warn('[sync] some pulled items could not resolve to local content, will retry next sync');
+    } else if (Date.now() - stalledSince > STALL_TIMEOUT_MS) {
+      console.warn('[sync] giving up on unresolved pulled items after 24h, forcing cursor forward');
+      await setStalledSince(profileId, null);
+      await setCursor(profileId, result.cursor);
+    }
   }
 
   queryClient.invalidateQueries({ queryKey: queryKeys.favorites });
@@ -269,7 +282,7 @@ async function applyPulledProgress(
     `UPDATE progreso
        SET posicion_segundos = ?, duracion_total = COALESCE(?, duracion_total), completado = ?,
            last_watched_at = ?, deleted_at = ?, profile_id = ?, canonical_key = ?, updated_at = ?, dirty = 0
-     WHERE ${matchClause};`,
+     WHERE ${matchClause} AND (profile_id IS NULL OR profile_id = ?);`,
     [
       item.posicionSegundos,
       item.duracionTotal,
@@ -280,6 +293,7 @@ async function applyPulledProgress(
       item.canonicalKey,
       Date.now(),
       matchParam,
+      profileId,
     ],
   );
 
@@ -318,17 +332,29 @@ async function applyPulledFavorite(
   if (local.episodeId !== null) return true;
 
   if (item.deletedAt !== null) {
-    await db.runAsync('DELETE FROM favoritos WHERE content_id = ?;', [local.contentId]);
+    await db.runAsync(
+      `UPDATE favoritos SET deleted_at = ?, updated_at = ?, dirty = 0, profile_id = COALESCE(profile_id, ?)
+       WHERE content_id = ? AND (profile_id IS NULL OR profile_id = ?);`,
+      [item.deletedAt, Date.now(), profileId, local.contentId, profileId],
+    );
     return true;
   }
 
-  await db.runAsync(
-    `INSERT INTO favoritos (id, content_id, created_at, profile_id, canonical_key, updated_at, deleted_at, dirty)
-     VALUES (?, ?, ?, ?, ?, ?, NULL, 0)
-     ON CONFLICT(content_id) DO UPDATE SET
-       profile_id = excluded.profile_id, canonical_key = excluded.canonical_key,
-       updated_at = excluded.updated_at, deleted_at = NULL, dirty = 0;`,
-    [uuid(), local.contentId, item.createdAt, profileId, item.canonicalKey, Date.now()],
+  const updateResult = await db.runAsync(
+    `UPDATE favoritos SET created_at = ?, canonical_key = ?, updated_at = ?, deleted_at = NULL, dirty = 0,
+       profile_id = COALESCE(profile_id, ?)
+     WHERE content_id = ? AND (profile_id IS NULL OR profile_id = ?);`,
+    [item.createdAt, item.canonicalKey, Date.now(), profileId, local.contentId, profileId],
   );
+  if (updateResult.changes === 0) {
+    await db.runAsync(
+      `INSERT INTO favoritos (id, content_id, created_at, profile_id, canonical_key, updated_at, deleted_at, dirty)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, 0)
+       ON CONFLICT(content_id, profile_id) DO UPDATE SET
+         created_at = excluded.created_at, canonical_key = excluded.canonical_key,
+         updated_at = excluded.updated_at, deleted_at = NULL, dirty = 0;`,
+      [uuid(), local.contentId, item.createdAt, profileId, item.canonicalKey, Date.now()],
+    );
+  }
   return true;
 }
