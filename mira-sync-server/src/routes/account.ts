@@ -56,6 +56,19 @@ accountRoutes.post('/resolve', async (c) => {
     return c.json({ error: 'account_unavailable' }, 500);
   }
 
+  const existingDevice = await prisma.device.findUnique({
+    where: { id: body.deviceId },
+    select: { accountId: true },
+  });
+  if (existingDevice && existingDevice.accountId !== account.id) {
+    logWarn('account.resolve.device_forbidden', {
+      accountId: account.id,
+      deviceId: body.deviceId,
+      ownerAccountId: existingDevice.accountId,
+    });
+    return c.json({ error: 'forbidden' }, 403);
+  }
+
   const secret = generateSecret();
   await prisma.device.upsert({
     where: { id: body.deviceId },

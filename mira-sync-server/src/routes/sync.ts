@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
 import { requireAuth, assertProfileInAccount, type AuthVars } from '../auth.js';
 import { isValidCanonicalKey } from '../canonical.js';
@@ -21,6 +22,33 @@ function toMs(d: Date | null): number | null {
 function fromMs(ms: number | null | undefined): Date | null {
   return ms != null ? new Date(ms) : null;
 }
+
+const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
+
+function clampTimestamp(value: number, now: number): number {
+  if (!Number.isFinite(value)) return now;
+  return Math.min(value, now + MAX_FUTURE_SKEW_MS);
+}
+
+function finiteOrNull(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function runSerializable<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await prisma.$transaction(fn, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (err) {
+      const isConflict = err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2034';
+      if (!isConflict || attempt === maxAttempts) throw err;
+    }
+  }
+  throw new Error('unreachable');
+}
+
+const PULL_CURSOR_SAFETY_MARGIN_MS = 2000;
 
 syncRoutes.get('/pull', async (c) => {
   const accountId = c.get('accountId');
@@ -77,7 +105,7 @@ syncRoutes.get('/pull', async (c) => {
       };
     }),
   };
-  out.cursor = cursor;
+  out.cursor = Math.max(since, Math.min(cursor, Date.now() - PULL_CURSOR_SAFETY_MARGIN_MS));
   logInfo('sync.pull.ok', {
     accountId,
     deviceId,
@@ -86,7 +114,7 @@ syncRoutes.get('/pull', async (c) => {
     progressCount: out.progress.length,
     favoritesCount: out.favorites.length,
     preferencesCount: out.preferences.length,
-    cursor,
+    cursor: out.cursor,
   });
   return c.json(out);
 });
@@ -103,15 +131,23 @@ syncRoutes.post('/push', async (c) => {
   }
 
   const now = new Date();
+  const nowMs = now.getTime();
   const progressItems = Array.isArray(body.progress) ? body.progress : [];
   const favoriteItems = Array.isArray(body.favorites) ? body.favorites : [];
   const preferenceItems = Array.isArray(body.preferences) ? body.preferences : [];
   let progressSkipped = 0;
   let favoritesSkipped = 0;
 
-  await prisma.$transaction(async (tx) => {
+  await runSerializable(async (tx) => {
     for (const item of progressItems) {
       if (!isValidCanonicalKey(item.canonicalKey)) {
+        progressSkipped += 1;
+        continue;
+      }
+      const posicionSegundos = finiteOrNull(item.posicionSegundos ?? 0);
+      const lastWatchedAt = finiteOrNull(item.lastWatchedAt ?? 0);
+      const duracionTotal = item.duracionTotal == null ? null : finiteOrNull(item.duracionTotal);
+      if (posicionSegundos === null || lastWatchedAt === null) {
         progressSkipped += 1;
         continue;
       }
@@ -128,11 +164,11 @@ syncRoutes.post('/push', async (c) => {
           }
         : null;
       const merged = mergeProgress(current, {
-        posicionSegundos: Number(item.posicionSegundos ?? 0),
-        duracionTotal: item.duracionTotal ?? null,
+        posicionSegundos,
+        duracionTotal,
         completado: Boolean(item.completado),
-        lastWatchedAt: Number(item.lastWatchedAt ?? 0),
-        deletedAt: item.deletedAt ?? null,
+        lastWatchedAt: clampTimestamp(lastWatchedAt, nowMs),
+        deletedAt: item.deletedAt == null ? null : clampTimestamp(Number(item.deletedAt), nowMs),
         reset: Boolean(item.reset),
       });
       await tx.progress.upsert({
@@ -165,6 +201,11 @@ syncRoutes.post('/push', async (c) => {
         favoritesSkipped += 1;
         continue;
       }
+      const createdAt = finiteOrNull(item.createdAt ?? Date.now());
+      if (createdAt === null) {
+        favoritesSkipped += 1;
+        continue;
+      }
       const existing = await tx.favorite.findUnique({
         where: { profileId_canonicalKey: { profileId, canonicalKey: item.canonicalKey } },
       });
@@ -172,8 +213,8 @@ syncRoutes.post('/push', async (c) => {
         ? { createdAt: Number(existing.createdAt), deletedAt: toMs(existing.deletedAt) }
         : null;
       const merged = mergeFavorite(current, {
-        createdAt: Number(item.createdAt ?? Date.now()),
-        deletedAt: item.deletedAt ?? null,
+        createdAt: clampTimestamp(createdAt, nowMs),
+        deletedAt: item.deletedAt == null ? null : clampTimestamp(Number(item.deletedAt), nowMs),
       });
       await tx.favorite.upsert({
         where: { profileId_canonicalKey: { profileId, canonicalKey: item.canonicalKey } },
@@ -196,6 +237,8 @@ syncRoutes.post('/push', async (c) => {
 
     for (const item of preferenceItems) {
       if (typeof item.clave !== 'string') continue;
+      const clientUpdatedAt = finiteOrNull(item.clientUpdatedAt ?? Date.now());
+      if (clientUpdatedAt === null) continue;
       const existing = await tx.preference.findUnique({
         where: { profileId_clave: { profileId, clave: item.clave } },
       });
@@ -203,7 +246,11 @@ syncRoutes.post('/push', async (c) => {
         existing
           ? { valor: existing.valor, clientUpdatedAt: Number(existing.clientUpdatedAt), deletedAt: toMs(existing.deletedAt) }
           : null,
-        { valor: item.valor ?? null, clientUpdatedAt: Number(item.clientUpdatedAt ?? Date.now()), deletedAt: item.deletedAt ?? null },
+        {
+          valor: item.valor ?? null,
+          clientUpdatedAt: clampTimestamp(clientUpdatedAt, nowMs),
+          deletedAt: item.deletedAt == null ? null : clampTimestamp(Number(item.deletedAt), nowMs),
+        },
       );
       await tx.preference.upsert({
         where: { profileId_clave: { profileId, clave: item.clave } },
