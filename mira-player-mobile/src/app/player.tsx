@@ -357,6 +357,9 @@ function PlayerView({ contentId, episodeId }: { contentId: string; episodeId?: s
         style={StyleSheet.absoluteFill}
         paused={paused}
         resizeMode="contain"
+        enterPictureInPictureOnLeave
+        playInBackground
+        playWhenInactive
         selectedTextTrack={selectedTrack}
         selectedAudioTrack={selectedAudio}
         onLoad={onLoad}

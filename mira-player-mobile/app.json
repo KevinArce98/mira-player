@@ -50,7 +50,13 @@
       ],
       "expo-sqlite",
       "expo-secure-store",
-      "react-native-video",
+      [
+        "react-native-video",
+        {
+          "enableAndroidPictureInPicture": true,
+          "enableBackgroundAudio": true
+        }
+      ],
       "expo-font",
       [
         "expo-build-properties",
