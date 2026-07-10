@@ -2,6 +2,7 @@ import type { XtreamClient } from './xtream-client';
 import type { XtreamCategory } from '@/types/xtream';
 import type { MediaItem, MediaKind } from './media';
 import { isAdultCategoryName, isAdultEnabled } from './parental';
+import { normalizeSearchText } from './search-text';
 
 // Capa sobre XtreamClient: normaliza a MediaItem y cachea categorías y listados
 // para no repetir peticiones al moverse por el catálogo o al buscar.
@@ -68,7 +69,13 @@ export class Library {
       const list = await this.client.liveStreams(categoryId);
       return list
         .filter((s) => !s.category_id || !blocked.has(s.category_id))
-        .map((s) => ({ kind, id: s.stream_id, name: s.name, icon: s.stream_icon }));
+        .map((s) => ({
+          kind,
+          id: s.stream_id,
+          name: s.name,
+          icon: s.stream_icon,
+          searchNorm: normalizeSearchText(s.name),
+        }));
     }
     if (kind === 'movie') {
       const list = await this.client.vodStreams(categoryId);
@@ -80,12 +87,19 @@ export class Library {
           name: m.name,
           icon: m.stream_icon,
           containerExtension: m.container_extension,
+          searchNorm: normalizeSearchText(m.name),
         }));
     }
     const list = await this.client.series(categoryId);
     return list
       .filter((s) => !s.category_id || !blocked.has(s.category_id))
-      .map((s) => ({ kind, id: s.series_id, name: s.name, icon: s.cover }));
+      .map((s) => ({
+        kind,
+        id: s.series_id,
+        name: s.name,
+        icon: s.cover,
+        searchNorm: normalizeSearchText(s.name),
+      }));
   }
 
   // Listado completo de un tipo (sin categoría), cacheado para búsqueda.
@@ -99,7 +113,7 @@ export class Library {
   }
 
   async search(query: string): Promise<MediaItem[]> {
-    const q = query.trim().toLowerCase();
+    const q = normalizeSearchText(query.trim());
     if (!q) return [];
     const [live, movies, series] = await Promise.all([
       this.all('live'),
@@ -107,7 +121,7 @@ export class Library {
       this.all('series'),
     ]);
     return [...movies, ...series, ...live]
-      .filter((i) => i.name.toLowerCase().includes(q))
+      .filter((i) => (i.searchNorm ?? normalizeSearchText(i.name)).includes(q))
       .slice(0, 120);
   }
 }

@@ -1,5 +1,6 @@
 import { getDatabase } from '@/db';
 import { uuid } from '@/lib/id';
+import { normalizeSearchText } from '@/lib/search-text';
 import type { Contenido, ContentSort, ContentType } from '@/types/models';
 
 export type ContentUpsert = Omit<
@@ -46,12 +47,13 @@ export async function upsertContentBatch(items: ContentUpsert[]): Promise<number
   await db.withTransactionAsync(async () => {
     const stmt = await db.prepareAsync(
       `INSERT INTO contenido
-         (id, cuenta_id, tipo, stream_id, nombre, categoria, categoria_id,
+         (id, cuenta_id, tipo, stream_id, nombre, nombre_normalizado, categoria, categoria_id,
           poster_url, container_extension, epg_channel_id, orden, created_at, updated_at)
-       VALUES ($id, $cuenta, $tipo, $stream, $nombre, $cat, $catId,
+       VALUES ($id, $cuenta, $tipo, $stream, $nombre, $nombreNorm, $cat, $catId,
                $poster, $ext, $epg, $orden, $now, $now)
        ON CONFLICT(cuenta_id, tipo, stream_id) DO UPDATE SET
          nombre = excluded.nombre,
+         nombre_normalizado = excluded.nombre_normalizado,
          categoria = excluded.categoria,
          categoria_id = excluded.categoria_id,
          poster_url = excluded.poster_url,
@@ -68,6 +70,7 @@ export async function upsertContentBatch(items: ContentUpsert[]): Promise<number
           $tipo: it.tipo,
           $stream: it.stream_id,
           $nombre: it.nombre,
+          $nombreNorm: normalizeSearchText(it.nombre),
           $cat: it.categoria,
           $catId: it.categoria_id,
           $poster: it.poster_url,
@@ -117,8 +120,8 @@ export async function queryContent(q: ContentQuery): Promise<Contenido[]> {
     params.push(q.categoriaId);
   }
   if (q.search) {
-    where.push('nombre LIKE ?');
-    params.push(`%${q.search}%`);
+    where.push('nombre_normalizado LIKE ?');
+    params.push(`%${normalizeSearchText(q.search)}%`);
   }
   where.push(...parentalClauses(q.parental, params));
   params.push(q.limit ?? 100, q.offset ?? 0);
@@ -145,8 +148,8 @@ export async function countContent(q: {
     params.push(q.categoriaId);
   }
   if (q.search) {
-    where.push('nombre LIKE ?');
-    params.push(`%${q.search}%`);
+    where.push('nombre_normalizado LIKE ?');
+    params.push(`%${normalizeSearchText(q.search)}%`);
   }
   where.push(...parentalClauses(q.parental, params));
 
@@ -164,8 +167,8 @@ export async function searchAllContent(
   parental?: ParentalFilter | null,
 ): Promise<Contenido[]> {
   const db = await getDatabase();
-  const where: string[] = ['cuenta_id = ?', 'nombre LIKE ?'];
-  const params: (string | number)[] = [cuentaId, `%${term}%`];
+  const where: string[] = ['cuenta_id = ?', 'nombre_normalizado LIKE ?'];
+  const params: (string | number)[] = [cuentaId, `%${normalizeSearchText(term)}%`];
   where.push(...parentalClauses(parental, params));
   params.push(limit);
   return db.getAllAsync<Contenido>(

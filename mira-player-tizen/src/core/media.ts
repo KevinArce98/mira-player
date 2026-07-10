@@ -6,6 +6,7 @@ export interface MediaItem {
   name: string;
   icon: string | null;
   containerExtension?: string | null;
+  searchNorm?: string;
 }
 
 // Payload mínimo para reconstruir la URL de reproducción y reanudar.

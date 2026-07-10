@@ -1,5 +1,6 @@
 import type { Database, SqlValue, Statement } from 'sql.js';
 import { runMigrations } from './schema';
+import { normalizeSearchText } from '@/lib/search-text';
 
 const IDB_DB_NAME = 'miratv';
 const IDB_STORE = 'db';
@@ -136,6 +137,23 @@ export class WebDatabase {
 
 let dbPromise: Promise<WebDatabase> | null = null;
 
+async function backfillNormalizedNames(db: WebDatabase): Promise<void> {
+  const rows = await db.getAllAsync<{ id: string; nombre: string }>(
+    'SELECT id, nombre FROM contenido WHERE nombre_normalizado IS NULL;',
+  );
+  if (rows.length === 0) return;
+  await db.withTransactionAsync(async () => {
+    const stmt = await db.prepareAsync('UPDATE contenido SET nombre_normalizado = $norm WHERE id = $id;');
+    try {
+      for (const row of rows) {
+        await stmt.executeAsync({ $norm: normalizeSearchText(row.nombre), $id: row.id });
+      }
+    } finally {
+      await stmt.finalizeAsync();
+    }
+  });
+}
+
 export function getDatabase(): Promise<WebDatabase> {
   if (!dbPromise) {
     dbPromise = (async () => {
@@ -146,6 +164,7 @@ export function getDatabase(): Promise<WebDatabase> {
       const sqlDb = saved ? new SQL.Database(saved) : new SQL.Database();
       const db = new WebDatabase(sqlDb, idb);
       await runMigrations(db);
+      await backfillNormalizedNames(db);
       return db;
     })();
   }

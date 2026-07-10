@@ -143,6 +143,11 @@ const MIGRATIONS: string[] = [
   CREATE INDEX idx_favoritos_profile ON favoritos(profile_id);
   CREATE INDEX idx_favoritos_dirty ON favoritos(dirty);
   `,
+
+  `
+  ALTER TABLE contenido ADD COLUMN nombre_normalizado TEXT;
+  CREATE INDEX idx_contenido_normalizado ON contenido(cuenta_id, nombre_normalizado);
+  `,
 ];
 
 export async function runMigrations(db: WebDatabase): Promise<void> {
