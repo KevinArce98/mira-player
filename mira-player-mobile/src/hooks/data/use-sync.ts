@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getAccount } from '@/db/repositories/accounts';
 import { syncCatalog, type SyncProgress } from '@/services/sync';
+import { runSync } from '@/services/sync/engine';
 import type { Cuenta } from '@/types/models';
 
 const AUTO_SYNC_MAX_AGE_MS = 6 * 60 * 60 * 1000;
@@ -15,6 +16,7 @@ export function useSyncCatalog() {
     mutationFn: async (cuenta: Cuenta) => {
       setProgress({ stage: 'live', written: 0 });
       const total = await syncCatalog(cuenta, setProgress);
+      await runSync();
       return total;
     },
     onSettled: () => {
