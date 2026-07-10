@@ -13,10 +13,7 @@ sub init()
     m.nextPlayBtn = m.top.FindNode("nextPlayBtn")
     m.nextCancelBtn = m.top.FindNode("nextCancelBtn")
 
-    m.video = m.top.CreateChild("Video")
-    m.video.width = 1280
-    m.video.height = 720
-    m.video.translation = [0, 0]
+    m.video = m.top.FindNode("video")
     m.video.ObserveField("state", "onVideoState")
     m.video.ObserveField("position", "onPosition")
     m.video.ObserveField("duration", "onVideoDuration")
@@ -327,12 +324,15 @@ end function
 
 sub onPosition()
     if m.isLive then return
-    if m.totalDuration = 0.0 then return
     curPos = m.video.position
-    m.osdTime.text = secsToStr(int(curPos)) + " / " + secsToStr(int(m.totalDuration))
-    frac = curPos / m.totalDuration
-    if frac > 1.0 then frac = 1.0
-    m.progressBar.width = int(1180 * frac)
+    if m.totalDuration > 0.0
+        m.osdTime.text = secsToStr(int(curPos)) + " / " + secsToStr(int(m.totalDuration))
+        frac = curPos / m.totalDuration
+        if frac > 1.0 then frac = 1.0
+        m.progressBar.width = int(1180 * frac)
+    else
+        m.osdTime.text = secsToStr(int(curPos))
+    end if
 end sub
 
 sub onVideoDuration()
@@ -393,54 +393,59 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         return true
     end if
 
-    if key = "OK"
-        if m.osdVisible
-            if m.video.state = "playing"
-                m.video.control = "pause"
-            else
-                m.video.control = "play"
-            end if
-        else
-            showOsd()
-        end if
+    if key = "OK" or key = "play"
+        togglePlayPause()
         return true
     end if
 
-    if key = "play"
-        showOsd()
-        return true
-    end if
-
-    if key = "fastForward"
+    if lcase(key) = "fastforward" or key = "right"
         if not m.isLive
-            m.video.seek = m.video.position + 30
-            showOsd()
+            performSeek(m.video.position + 30)
         end if
         return true
     end if
 
-    if key = "rewind"
+    if lcase(key) = "rewind" or key = "left"
         if not m.isLive
             newPos = m.video.position - 10
             if newPos < 0 then newPos = 0
-            m.video.seek = newPos
-            showOsd()
+            performSeek(newPos)
         end if
         return true
     end if
 
-    if key = "up"
-        showOsd()
-        return true
-    end if
-
-    if key = "down"
+    if key = "up" or key = "down"
         showOsd()
         return true
     end if
 
     return false
 end function
+
+sub performSeek(target as Float)
+    if target < 0 then target = 0
+    wasPlaying = (m.video.state = "playing")
+    if wasPlaying then m.video.control = "pause"
+    m.video.seek = target
+    if wasPlaying then m.video.control = "resume"
+    showOsd()
+end sub
+
+sub togglePlayPause()
+    if m.isLive
+        showOsd()
+        return
+    end if
+    if m.video.state = "playing"
+        m.video.control = "pause"
+        m.osd.visible = true
+        m.osdVisible = true
+        m.osdTimer.control = "stop"
+    else
+        m.video.control = "resume"
+        showOsd()
+    end if
+end sub
 
 function secsToStr(secs as Integer) as String
     h = int(secs / 3600)

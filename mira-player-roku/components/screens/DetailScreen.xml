@@ -26,27 +26,30 @@
     <Label id="castLabel" text="" translation="[340, 350]" width="860" color="0xA39C90FF" wrap="true" maxLines="2" />
 
     <!-- Action buttons -->
-    <Poster id="playBtn" uri="pkg:/images/ui/rr_220x54_8.png" blendColor="0xD4AA7DFF" translation="[340, 430]">
-      <Label id="playBtnLabel" text="Reproducir" width="220" height="54" horizAlign="center" vertAlign="center" color="0x272727FF" font="font:MediumBoldSystemFont" />
+    <Poster id="playBtn" uri="pkg:/images/ui/rr_360x54_8.png" width="360" height="54" blendColor="0xD4AA7DFF" translation="[340, 410]">
+      <Poster id="playIcon" uri="pkg:/images/icons/ic_play.png" width="26" height="26" blendColor="0x272727FF" translation="[86, 14]" />
+      <Label id="playBtnLabel" text="Reproducir" width="230" height="54" horizAlign="left" vertAlign="center" translation="[124, 0]" color="0x272727FF" font="font:MediumBoldSystemFont" />
     </Poster>
-    <Poster id="favBtn" uri="pkg:/images/ui/rr_220x54_8.png" blendColor="0x323230FF" translation="[580, 430]">
-      <Label id="favBtnLabel" text="Favorito" width="220" height="54" horizAlign="center" vertAlign="center" color="0xF3EEE6FF" font="font:MediumBoldSystemFont" />
+    <Poster id="favBtn" uri="pkg:/images/ui/rr_360x54_8.png" width="360" height="54" blendColor="0x323230FF" translation="[716, 410]">
+      <Poster id="favIcon" uri="pkg:/images/icons/ic_fav.png" width="26" height="26" blendColor="0xF3EEE6FF" translation="[92, 14]" />
+      <Label id="favBtnLabel" text="Favorito" width="230" height="54" horizAlign="left" vertAlign="center" translation="[130, 0]" color="0xF3EEE6FF" font="font:MediumBoldSystemFont" />
     </Poster>
 
     <!-- Series episode list (bordered card) -->
-    <Poster uri="pkg:/images/ui/rr_884x234_8.png" blendColor="0x3B3A37FF" translation="[338, 498]" visible="false" id="episodeBorder" />
-    <Poster id="episodePanel" uri="pkg:/images/ui/rr_880x230_8.png" blendColor="0x323230FF" translation="[340, 500]" visible="false">
+    <Poster uri="pkg:/images/ui/rr_884x234_8.png" width="884" height="204" blendColor="0x3B3A37FF" translation="[338, 476]" visible="false" id="episodeBorder" />
+    <Poster id="episodePanel" uri="pkg:/images/ui/rr_880x230_8.png" width="880" height="200" blendColor="0x323230FF" translation="[340, 478]" visible="false">
       <Label id="seasonLabel" text="Temporada 1" translation="[14, 10]" color="0xD4AA7DFF" font="font:SmallBoldSystemFont" />
       <LabelList
         id="episodeList"
-        translation="[0, 40]"
+        translation="[0, 38]"
         numRows="4"
-        itemSize="[880, 44]"
+        itemSize="[880, 40]"
+        vertFocusAnimationStyle="fixedFocusWrap"
         font="font:SmallSystemFont"
+        focusedFont="font:SmallBoldSystemFont"
         color="0xA39C90FF"
-        focusedColor="0x272727FF"
-        focusBitmapBlendColor="0xD4AA7DFF"
-        drawFocusFeedback="true"
+        focusedColor="0xD4AA7DFF"
+        drawFocusFeedback="false"
       />
     </Poster>
 

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SearchScreen" extends="Group">
+  <interface>
+    <field id="credentials" type="assocarray" onChange="onCredentialsSet" />
+    <field id="navigate" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/registry.brs" />
+  <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/SearchScreen.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x272727FF" />
+
+    <Rectangle width="1280" height="70" color="0x323230FF" />
+    <Label id="headerTitle" text="Buscar" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xF3EEE6FF" />
+    <Label text="Verde: Nueva búsqueda" translation="[1040, 25]" color="0x6E685EFF" font="font:SmallSystemFont" />
+
+    <PosterGrid
+      id="posterGrid"
+      translation="[30, 90]"
+      numColumns="7"
+      numRows="3"
+      itemSize="[150, 218]"
+      itemSpacing="[14, 16]"
+      posterDisplayMode="scaleToZoom"
+    />
+
+    <Label id="stateLabel" text="" color="0xA39C90FF" translation="[560, 350]" visible="false" />
+    <BusySpinner id="spinner" translation="[620, 380]" visible="false" />
+  </children>
+</component>

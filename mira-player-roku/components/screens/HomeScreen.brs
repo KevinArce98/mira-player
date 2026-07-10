@@ -4,6 +4,7 @@ sub init()
         {label: "En vivo",    icon: "pkg:/images/icons/nav_live.png",     screen: "LiveScreen"},
         {label: "Películas",  icon: "pkg:/images/icons/nav_movies.png",   screen: "CatalogScreen", tipo: "movie"},
         {label: "Series",     icon: "pkg:/images/icons/nav_series.png",   screen: "CatalogScreen", tipo: "series"},
+        {label: "Buscar",     icon: "pkg:/images/icons/nav_search.png",   screen: "SearchScreen"},
         {label: "Perfiles",   icon: "pkg:/images/icons/nav_profiles.png", screen: "ProfileScreen"},
         {label: "Ajustes",    icon: "pkg:/images/icons/nav_settings.png", screen: "SettingsScreen"},
     ]
@@ -22,6 +23,7 @@ sub init()
     m.navIndex = 0
     m.continueFocusedIdx = 0
     m.filteredContinue = []
+    m.wasInFocusChain = false
 
     content = CreateObject("roSGNode", "ContentNode")
     for each item in m.navItems
@@ -37,15 +39,18 @@ sub init()
     m.navList.ObserveField("itemFocused", "onNavFocused")
     m.continueGrid.ObserveField("itemFocused", "onContinueFocused")
     m.continueGrid.ObserveField("itemSelected", "onContinueSelected")
+    m.favGrid.ObserveField("itemSelected", "onFavSelected")
     m.top.ObserveField("focusedChild", "onFocusChanged")
 end sub
 
 sub onFocusChanged()
-    if not m.top.IsInFocusChain() then return
-    if m.top.credentials <> invalid
+    inChain = m.top.IsInFocusChain()
+    if inChain and not m.wasInFocusChain and m.top.credentials <> invalid
         loadContinueDisplay()
         loadFavoritesDisplay()
     end if
+    m.wasInFocusChain = inChain
+    if not inChain then return
     if not m.navList.IsInFocusChain() and not m.continueGrid.IsInFocusChain() and not m.favGrid.IsInFocusChain()
         m.navList.SetFocus(true)
     end if
@@ -200,12 +205,23 @@ sub loadFavoritesDisplay()
     activeProfile = GetActiveProfileId()
     all = LoadFavorites()
     favs = []
+    seen = {}
     for each fav in all
         if type(fav) <> "roAssociativeArray"
-            favs.Push(fav)
+            dedupKey = "movie|" + SafeStr(fav)
+            if not seen.DoesExist(dedupKey)
+                seen[dedupKey] = true
+                favs.Push(fav)
+            end if
         else
             owned = fav["profileId"] = invalid or fav["profileId"] = activeProfile
-            if fav["deletedAt"] = invalid and owned then favs.Push(fav)
+            if fav["deletedAt"] = invalid and owned
+                dedupKey = SafeStr(fav["type"]) + "|" + FavoriteCanonicalId(fav)
+                if not seen.DoesExist(dedupKey)
+                    seen[dedupKey] = true
+                    favs.Push(fav)
+                end if
+            end if
         end if
     end for
     if favs.Count() = 0
@@ -231,7 +247,6 @@ sub loadFavoritesDisplay()
     m.favLabel.visible = true
     repositionFav()
     m.filteredFavs = favs
-    m.favGrid.ObserveField("itemSelected", "onFavSelected")
     updateEmptyState()
 end sub
 
@@ -290,6 +305,16 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             m.navList.SetFocus(true)
             return true
         end if
+    end if
+
+    if key = "down" and m.continueGrid.IsInFocusChain() and m.favGrid.visible
+        m.favGrid.SetFocus(true)
+        return true
+    end if
+
+    if key = "up" and m.favGrid.IsInFocusChain() and m.continueGrid.visible
+        m.continueGrid.SetFocus(true)
+        return true
     end if
 
     return false

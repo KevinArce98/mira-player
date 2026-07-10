@@ -6,8 +6,11 @@ sub init()
     m.castLabel = m.top.FindNode("castLabel")
     m.poster = m.top.FindNode("poster")
     m.playBtn = m.top.FindNode("playBtn")
+    m.playBtnLabel = m.top.FindNode("playBtnLabel")
+    m.playIcon = m.top.FindNode("playIcon")
     m.favBtn = m.top.FindNode("favBtn")
     m.favBtnLabel = m.top.FindNode("favBtnLabel")
+    m.favIcon = m.top.FindNode("favIcon")
     m.episodePanel = m.top.FindNode("episodePanel")
     m.episodeBorder = m.top.FindNode("episodeBorder")
     m.episodeList = m.top.FindNode("episodeList")
@@ -35,6 +38,7 @@ sub onFocusChanged()
         m.wentToPlayer = false
         m.focusIndex = 0
         updateFocus()
+        if m.seasonKeys.Count() > 0 then showSeason(m.seasonKeys[m.currentSeasonIdx])
     end if
 end sub
 
@@ -53,9 +57,8 @@ sub onDataSet()
     end if
 
     streamId = getContentId(item)
-    isFav = IsFavorite(streamId)
+    isFav = IsFavorite(streamId, m.top.contentType)
     m.favBtnLabel.text = iif(isFav, "Favorito (si)", "Favorito")
-    m.favBtnLabel.color = iif(isFav, "0xD4AA7DFF", "0xF3EEE6FF")
 
     if m.top.contentType = "movie"
         loadMovieInfo(item)
@@ -132,17 +135,36 @@ sub showSeason(seasonKey as String)
     epList = m.seasons[seasonKey]
     if epList = invalid then return
 
+    seriesId = SafeStr(m.top.contentData["series_id"])
+    watchedKeys = watchedEpisodeKeys(seriesId)
+
     m.allEpisodes = epList
     content = CreateObject("roSGNode", "ContentNode")
     for each ep in epList
         row = CreateObject("roSGNode", "ContentNode")
         epNum = SafeStr(ep["episode_num"])
         title = CleanText(SafeStr(ep["title"]))
-        row.title = "  Ep. " + epNum + iif(title <> "", "  " + title, "")
+        key = "series:" + seriesId + ":" + Val(seasonKey).ToStr() + ":" + Val(epNum).ToStr()
+        mark = iif(watchedKeys.DoesExist(key), "✓ ", "  ")
+        row.title = mark + "Ep. " + epNum + iif(title <> "", "  " + title, "")
         content.AppendChild(row)
     end for
     m.episodeList.content = content
 end sub
+
+function watchedEpisodeKeys(seriesId as String) as Object
+    activeProfile = GetActiveProfileId()
+    prefix = "series:" + seriesId + ":"
+    result = {}
+    for each entry in LoadContinueList()
+        owned = entry["profileId"] = invalid or entry["profileId"] = activeProfile
+        if owned and entry["completado"] = true and entry["deletedAt"] = invalid
+            key = SafeStr(entry["key"])
+            if Left(key, len(prefix)) = prefix then result[key] = true
+        end if
+    end for
+    return result
+end function
 
 function sortSeasonKeys(keys as Object) as Object
     sorted = []
@@ -225,18 +247,27 @@ function buildEpisodeQueue(startSeasonIdx as Integer, startEpIdx as Integer) as 
 end function
 
 sub updateFocus()
-    m.playBtn.blendColor = "0x323230FF"
-    m.favBtn.blendColor = "0x323230FF"
+    styleButton(m.playBtn, m.playBtnLabel, m.playIcon, m.focusIndex = 0)
+    styleButton(m.favBtn, m.favBtnLabel, m.favIcon, m.focusIndex = 1)
 
-    if m.focusIndex = 0
-        m.playBtn.blendColor = "0xD4AA7DFF"
-    else if m.focusIndex = 1
-        m.favBtn.blendColor = "0x323230FF"
-    else if m.focusIndex = 2
+    if m.focusIndex = 2
         m.episodeList.SetFocus(true)
         return
     end if
+    m.episodeList.SetFocus(false)
     m.top.SetFocus(true)
+end sub
+
+sub styleButton(btn as Object, label as Object, icon as Object, focused as Boolean)
+    if focused
+        btn.blendColor = "0xD4AA7DFF"
+        label.color = "0x272727FF"
+        icon.blendColor = "0x272727FF"
+    else
+        btn.blendColor = "0x323230FF"
+        label.color = "0xF3EEE6FF"
+        icon.blendColor = "0xF3EEE6FF"
+    end if
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
@@ -328,7 +359,6 @@ sub toggleFav()
     if id = "" then return
     isFav = ToggleFavorite(id, m.top.contentType, item)
     m.favBtnLabel.text = iif(isFav, "Favorito (si)", "Favorito")
-    m.favBtnLabel.color = iif(isFav, "0xD4AA7DFF", "0xF3EEE6FF")
     RunSync(m.top)
 end sub
 

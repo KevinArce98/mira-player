@@ -43,6 +43,10 @@ function iif(condition as Boolean, trueVal as Dynamic, falseVal as Dynamic) as D
     return falseVal
 end function
 
+function NormalizeSearchText(s as String) as String
+    return lcase(StripDiacritics(s))
+end function
+
 function CleanText(s as String) as String
     if s = "" then return ""
     src = CreateObject("roByteArray")

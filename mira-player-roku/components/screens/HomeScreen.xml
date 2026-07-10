@@ -21,7 +21,7 @@
     <MarkupList
       id="navList"
       translation="[0, 96]"
-      numRows="6"
+      numRows="7"
       itemSize="[190, 52]"
       itemSpacing="[0, 8]"
       itemComponentName="NavItem"

@@ -13,8 +13,8 @@
     <Label text="Ajustes" translation="[30, 20]" font="font:LargeBoldSystemFont" color="0xF3EEE6FF" />
 
     <!-- Cuenta card -->
-    <Poster uri="pkg:/images/ui/rr_702x196_13.png" blendColor="0x3B3A37FF" translation="[289, 99]" />
-    <Poster uri="pkg:/images/ui/rr_700x194_13.png" blendColor="0x323230FF" translation="[290, 100]" />
+    <Poster uri="pkg:/images/ui/rr_702x196_13.png" width="702" height="196" blendColor="0x3B3A37FF" translation="[289, 99]" />
+    <Poster uri="pkg:/images/ui/rr_700x194_13.png" width="700" height="194" blendColor="0x323230FF" translation="[290, 100]" />
     <Label text="Cuenta" translation="[314, 116]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
     <Label id="serverInfo" text="" translation="[314, 150]" color="0xA39C90FF" />
     <Label id="userInfo" text="" translation="[314, 182]" color="0xA39C90FF" />
@@ -22,20 +22,20 @@
     <Label id="statusInfo" text="" translation="[314, 246]" color="0xA39C90FF" />
 
     <!-- Control parental card -->
-    <Poster uri="pkg:/images/ui/rr_702x146_13.png" blendColor="0x3B3A37FF" translation="[289, 319]" />
-    <Poster uri="pkg:/images/ui/rr_700x144_13.png" blendColor="0x323230FF" translation="[290, 320]" />
+    <Poster uri="pkg:/images/ui/rr_702x146_13.png" width="702" height="146" blendColor="0x3B3A37FF" translation="[289, 319]" />
+    <Poster uri="pkg:/images/ui/rr_700x144_13.png" width="700" height="144" blendColor="0x323230FF" translation="[290, 320]" />
     <Label text="Control parental" translation="[314, 336]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
     <Label text="Bloquea categorías de contenido para adultos con un PIN." translation="[314, 366]" color="0xA39C90FF" font="font:SmallSystemFont" />
-    <Poster id="parentalBtn" uri="pkg:/images/ui/rr_360x54_8.png" blendColor="0x323230FF" translation="[314, 394]">
-      <Label id="parentalBtnLabel" text="Control parental: Desactivado" color="0xF3EEE6FF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
+    <Poster id="parentalBtn" uri="pkg:/images/ui/rr_360x54_8.png" width="360" height="54" blendColor="0x323230FF" translation="[314, 394]">
+      <Label id="parentalBtnLabel" text="Control parental: Desactivado" width="320" height="54" horizAlign="center" vertAlign="center" color="0xF3EEE6FF" font="font:MediumBoldSystemFont" />
     </Poster>
 
     <!-- Acciones card -->
-    <Poster uri="pkg:/images/ui/rr_702x116_13.png" blendColor="0x3B3A37FF" translation="[289, 485]" />
-    <Poster uri="pkg:/images/ui/rr_700x114_13.png" blendColor="0x323230FF" translation="[290, 486]" />
+    <Poster uri="pkg:/images/ui/rr_702x116_13.png" width="702" height="116" blendColor="0x3B3A37FF" translation="[289, 485]" />
+    <Poster uri="pkg:/images/ui/rr_700x114_13.png" width="700" height="114" blendColor="0x323230FF" translation="[290, 486]" />
     <Label text="Acciones" translation="[314, 502]" font="font:SmallBoldSystemFont" color="0xD4AA7DFF" />
-    <Poster id="logoutBtn" uri="pkg:/images/ui/rr_300x54_8.png" blendColor="0x323230FF" translation="[314, 530]">
-      <Label text="Cerrar sesión" color="0xE0857AFF" translation="[20, 14]" font="font:MediumBoldSystemFont" />
+    <Poster id="logoutBtn" uri="pkg:/images/ui/rr_300x54_8.png" width="300" height="54" blendColor="0x323230FF" translation="[314, 530]">
+      <Label id="logoutBtnLabel" text="Cerrar sesión" width="260" height="54" horizAlign="center" vertAlign="center" color="0xE0857AFF" font="font:MediumBoldSystemFont" />
     </Poster>
 
     <BusySpinner id="spinner" translation="[620, 190]" visible="true" />

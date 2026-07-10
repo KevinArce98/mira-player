@@ -9,7 +9,7 @@ sub init()
     m.categories = []
     m.allItems = []
     m.filteredItems = []
-    m.currentCategoryId = ""
+    m.currentCategoryId = invalid
     m.panelFocus = "categories"
     m.pendingAction = ""
     m.searchTerm = ""
@@ -20,6 +20,12 @@ sub init()
 
     m.task = CreateObject("roSGNode", "XtreamTask")
     m.task.ObserveField("response", "onResponse")
+
+    m.categoryDebounce = m.top.CreateChild("Timer")
+    m.categoryDebounce.duration = 0.25
+    m.categoryDebounce.repeat = false
+    m.categoryDebounce.ObserveField("fire", "onCategoryDebounceFire")
+    m.pendingCategoryIdx = -1
 
     m.categoryList.ObserveField("itemFocused", "onCategoryFocused")
     m.categoryList.ObserveField("itemSelected", "onCategorySelected")
@@ -114,7 +120,6 @@ sub buildCategoryList(data as Object)
     end for
 
     renderCategoryList()
-    m.categoryList.SetFocus(true)
 
     restoreIdx = 0
     if m.savedCategoryId <> invalid and m.savedCategoryId <> ""
@@ -125,12 +130,9 @@ sub buildCategoryList(data as Object)
         end for
     end if
 
-    if restoreIdx > 0
-        m.categoryList.jumpToItem = restoreIdx
-        loadItems(m.savedCategoryId)
-    else
-        loadItems("")
-    end if
+    m.currentCategoryId = invalid
+    if restoreIdx > 0 then m.categoryList.jumpToItem = restoreIdx
+    m.categoryList.SetFocus(true)
 end sub
 
 sub renderCategoryList()
@@ -245,6 +247,14 @@ end sub
 
 sub onCategoryFocused(event as Object)
     idx = event.GetData()
+    if idx < 0 or idx >= m.categories.Count() then return
+    m.pendingCategoryIdx = idx
+    m.categoryDebounce.control = "stop"
+    m.categoryDebounce.control = "start"
+end sub
+
+sub onCategoryDebounceFire()
+    idx = m.pendingCategoryIdx
     if idx < 0 or idx >= m.categories.Count() then return
     cat = m.categories[idx]
     categoryId = SafeStr(cat["category_id"])

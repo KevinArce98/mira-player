@@ -19,6 +19,7 @@
   <script type="text/brightscript" uri="pkg:/components/screens/PlayerScreen.brs" />
   <children>
     <Rectangle id="bg" width="1280" height="720" color="0x000000FF" />
+    <Video id="video" width="1280" height="720" translation="[0, 0]" enableTrickPlay="false" />
     <BusySpinner id="spinner" translation="[615, 330]" visible="true" />
     <Label id="errorLabel" text="" translation="[340, 340]" color="0xE0857AFF" visible="false" width="600" wrap="true" />
     <Group id="osd" visible="false">
@@ -27,7 +28,7 @@
       <Rectangle width="1280" height="40" color="0x000000AA" translation="[0, 600]" />
       <Rectangle width="1280" height="80" color="0x000000E0" translation="[0, 640]" />
       <Label id="osdTitle" text="" translation="[50, 650]" color="0xF3EEE6FF" width="1100" font="font:LargeBoldSystemFont" />
-      <Label id="osdTime" text="" translation="[1150, 695]" color="0xA39C90FF" />
+      <Label id="osdTime" text="" translation="[980, 695]" width="250" horizAlign="right" color="0xA39C90FF" />
       <Label id="liveLabel" text="EN VIVO" translation="[50, 695]" color="0xE0857AFF" font="font:SmallBoldSystemFont" visible="false" />
       <Rectangle width="1180" height="6" color="0x3B3A37FF" translation="[50, 714]" />
       <Rectangle id="progressBar" width="4" height="6" color="0xD4AA7DFF" translation="[50, 714]" />

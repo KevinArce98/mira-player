@@ -79,13 +79,26 @@ function SaveFavoritesCAS(items as Object, expectedRev as String) as Boolean
     return true
 end function
 
-function IsFavorite(id as String) as Boolean
+function FavoriteCanonicalId(fav as Object) as String
+    if type(fav) <> "roAssociativeArray" then return SafeStr(fav)
+    if SafeStr(fav["type"]) = "series" and SafeStr(fav["series_id"]) <> "" then return SafeStr(fav["series_id"])
+    if SafeStr(fav["stream_id"]) <> "" then return SafeStr(fav["stream_id"])
+    return SafeStr(fav["id"])
+end function
+
+function FavoriteMatches(fav as Object, id as String, contentType as String, profileId as String) as Boolean
+    if type(fav) <> "roAssociativeArray" then return SafeStr(fav) = id
+    owned = fav["profileId"] = invalid or fav["profileId"] = profileId
+    if not owned then return false
+    return FavoriteCanonicalId(fav) = id and SafeStr(fav["type"]) = contentType
+end function
+
+function IsFavorite(id as String, contentType as String) as Boolean
     profileId = GetActiveProfileId()
     favs = LoadFavorites()
     for each fav in favs
         if type(fav) = "roAssociativeArray"
-            owned = fav["profileId"] = invalid or fav["profileId"] = profileId
-            if SafeStr(fav["id"]) = id and fav["deletedAt"] = invalid and owned then return true
+            if FavoriteMatches(fav, id, contentType, profileId) and fav["deletedAt"] = invalid then return true
         else
             if SafeStr(fav) = id then return true
         end if
@@ -101,14 +114,7 @@ function ToggleFavorite(id as String, contentType as String, item as Object) as 
         newFavs = []
         existing = invalid
         for each fav in favs
-            if type(fav) = "roAssociativeArray"
-                favId = SafeStr(fav["id"])
-                owned = fav["profileId"] = invalid or fav["profileId"] = profileId
-            else
-                favId = SafeStr(fav)
-                owned = true
-            end if
-            if favId = id and owned
+            if FavoriteMatches(fav, id, contentType, profileId)
                 existing = fav
             else
                 newFavs.Push(fav)

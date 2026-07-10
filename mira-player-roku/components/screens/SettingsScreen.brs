@@ -4,6 +4,7 @@ sub init()
     m.expiryInfo = m.top.FindNode("expiryInfo")
     m.statusInfo = m.top.FindNode("statusInfo")
     m.logoutBtn = m.top.FindNode("logoutBtn")
+    m.logoutBtnLabel = m.top.FindNode("logoutBtnLabel")
     m.parentalBtn = m.top.FindNode("parentalBtn")
     m.parentalBtnLabel = m.top.FindNode("parentalBtnLabel")
     m.spinner = m.top.FindNode("spinner")
@@ -71,14 +72,19 @@ sub onAccountInfo()
 end sub
 
 sub updateFocus()
-    m.parentalBtn.blendColor = iif(m.focusIndex = 0, "0x4A443BFF", "0x323230FF")
-    m.logoutBtn.blendColor = iif(m.focusIndex = 1, "0x4C3E3BFF", "0x323230FF")
+    parentalFocused = (m.focusIndex = 0)
+    m.parentalBtn.blendColor = iif(parentalFocused, "0xD4AA7DFF", "0x323230FF")
+    m.parentalBtnLabel.color = iif(parentalFocused, "0x272727FF", "0xF3EEE6FF")
+
+    logoutFocused = (m.focusIndex = 1)
+    m.logoutBtn.blendColor = iif(logoutFocused, "0xE0857AFF", "0x323230FF")
+    m.logoutBtnLabel.color = iif(logoutFocused, "0x272727FF", "0xE0857AFF")
 end sub
 
 sub updateParentalLabel()
     enabled = IsParentalEnabled()
     m.parentalBtnLabel.text = iif(enabled, "Control parental: Activado", "Control parental: Desactivado")
-    m.parentalBtnLabel.color = iif(enabled, "0xD4AA7DFF", "0xF3EEE6FF")
+    updateFocus()
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
