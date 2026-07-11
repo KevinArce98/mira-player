@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "mira-player-mobile", "run", "web"],
       "port": 8081
+    },
+    {
+      "name": "mira-player-tizen-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "mira-player-tizen", "run", "dev"],
+      "port": 5180
     }
   ]
 }
