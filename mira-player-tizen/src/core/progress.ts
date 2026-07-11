@@ -14,6 +14,11 @@ export interface ProgressEntry {
   completado: boolean;
   deletedAt: number | null;
   syncedAt: number | null;
+  profileId: string | null;
+}
+
+function owned(entry: ProgressEntry, profileId: string | null): boolean {
+  return entry.profileId === null || entry.profileId === profileId;
 }
 
 function read(acct: string): ProgressEntry[] {
@@ -32,21 +37,24 @@ function write(acct: string, entries: ProgressEntry[]): void {
   localStorage.setItem(key(acct), JSON.stringify(trimmed));
 }
 
-export function markAllSynced(acct: string, syncedAt: number): void {
-  const entries = read(acct).map((e) => ({ ...e, syncedAt: e.syncedAt ?? syncedAt }));
+export function markAllSynced(acct: string, syncedAt: number, profileId: string | null): void {
+  const entries = read(acct).map((e) => (owned(e, profileId) ? { ...e, syncedAt: e.syncedAt ?? syncedAt } : e));
   write(acct, entries);
 }
 
-// Lista para "Continuar viendo", más reciente primero (sin canales en vivo ni completados).
-export function continueWatching(acct: string): ProgressEntry[] {
+export function continueWatching(acct: string, profileId: string | null): ProgressEntry[] {
   return read(acct)
-    .filter((e) => e.resume.kind !== 'live' && !e.completado && e.deletedAt === null)
+    .filter((e) => e.resume.kind !== 'live' && !e.completado && e.deletedAt === null && owned(e, profileId))
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export function getProgress(acct: string, resume: ResumePayload): ProgressEntry | undefined {
+export function getProgress(
+  acct: string,
+  resume: ResumePayload,
+  profileId: string | null,
+): ProgressEntry | undefined {
   const k = progressKey(resume);
-  return read(acct).find((e) => e.key === k && e.deletedAt === null);
+  return read(acct).find((e) => e.key === k && e.deletedAt === null && owned(e, profileId));
 }
 
 export function saveProgress(
@@ -55,9 +63,10 @@ export function saveProgress(
   resume: ResumePayload,
   positionMs: number,
   durationMs: number,
+  profileId: string | null,
 ): void {
   const k = progressKey(resume);
-  const entries = read(acct).filter((e) => e.key !== k);
+  const entries = read(acct).filter((e) => !(e.key === k && owned(e, profileId)));
   const completado = durationMs > 0 && positionMs / durationMs > 0.95;
   entries.unshift({
     key: k,
@@ -69,19 +78,32 @@ export function saveProgress(
     completado,
     deletedAt: null,
     syncedAt: null,
+    profileId,
   });
   write(acct, entries);
 }
 
-export function completeProgress(acct: string, item: MediaItem, resume: ResumePayload): void {
+export function completeProgress(
+  acct: string,
+  item: MediaItem,
+  resume: ResumePayload,
+  profileId: string | null,
+): void {
   const k = progressKey(resume);
   const entries = read(acct);
-  const idx = entries.findIndex((e) => e.key === k);
+  const idx = entries.findIndex((e) => e.key === k && owned(e, profileId));
   const now = Date.now();
   if (idx >= 0) {
     const existing = entries[idx];
     entries.splice(idx, 1);
-    entries.unshift({ ...existing, completado: true, updatedAt: now, deletedAt: null, syncedAt: null });
+    entries.unshift({
+      ...existing,
+      completado: true,
+      updatedAt: now,
+      deletedAt: null,
+      syncedAt: null,
+      profileId,
+    });
   } else {
     entries.unshift({
       key: k,
@@ -93,18 +115,19 @@ export function completeProgress(acct: string, item: MediaItem, resume: ResumePa
       completado: true,
       deletedAt: null,
       syncedAt: null,
+      profileId,
     });
   }
   write(acct, entries);
 }
 
-export function removeProgress(acct: string, resume: ResumePayload): void {
+export function removeProgress(acct: string, resume: ResumePayload, profileId: string | null): void {
   const k = progressKey(resume);
   const entries = read(acct);
-  const idx = entries.findIndex((e) => e.key === k);
+  const idx = entries.findIndex((e) => e.key === k && owned(e, profileId));
   if (idx < 0) return;
   const now = Date.now();
-  entries[idx] = { ...entries[idx], deletedAt: now, updatedAt: now, syncedAt: null };
+  entries[idx] = { ...entries[idx], deletedAt: now, updatedAt: now, syncedAt: null, profileId };
   write(acct, entries);
 }
 
@@ -112,11 +135,8 @@ export function listAllProgressEntries(acct: string): ProgressEntry[] {
   return read(acct);
 }
 
-export function applyRemoteProgress(
-  acct: string,
-  entry: ProgressEntry,
-): void {
-  const entries = read(acct).filter((e) => e.key !== entry.key);
-  entries.unshift(entry);
+export function applyRemoteProgress(acct: string, entry: ProgressEntry, profileId: string | null): void {
+  const entries = read(acct).filter((e) => !(e.key === entry.key && owned(e, profileId)));
+  entries.unshift({ ...entry, profileId });
   write(acct, entries);
 }

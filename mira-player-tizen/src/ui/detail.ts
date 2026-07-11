@@ -2,6 +2,7 @@ import type { Screen } from '@/core/router';
 import { navigate } from '@/core/router';
 import { getSession } from '@/core/session';
 import { getProgress } from '@/core/progress';
+import { getActiveProfileId } from '@/services/sync/sync-meta';
 import { focusFirst } from '@/core/navigation';
 import type { MediaItem, ResumePayload } from '@/core/media';
 import type { XtreamEpisode, XtreamSeriesInfo } from '@/types/xtream';
@@ -11,6 +12,7 @@ import { createPlayerScreen } from './player-screen';
 
 export function createDetailScreen(series: MediaItem): Screen {
   const { client, acctKey } = getSession();
+  const profileId = getActiveProfileId(acctKey);
   let info: XtreamSeriesInfo;
   let seasons: string[] = [];
   let episodeList: HTMLElement;
@@ -27,7 +29,7 @@ export function createDetailScreen(series: MediaItem): Screen {
       episodeNum: Number(ep.episode_num),
     };
     const media: MediaItem = { kind: 'series', id: series.id, name: title, icon: series.icon };
-    const prog = getProgress(acctKey, resume);
+    const prog = getProgress(acctKey, resume, profileId);
     void navigate(() =>
       createPlayerScreen({ title, media, resume, startMs: prog?.positionMs }),
     );
@@ -41,15 +43,19 @@ export function createDetailScreen(series: MediaItem): Screen {
       return;
     }
     eps.forEach((ep) => {
-      const watched = getProgress(acctKey, {
-        kind: 'series',
-        episodeId: ep.id,
-        ext: ep.container_extension || 'mp4',
-        seriesId: series.id,
-        title: '',
-        season: Number(ep.season),
-        episodeNum: Number(ep.episode_num),
-      });
+      const watched = getProgress(
+        acctKey,
+        {
+          kind: 'series',
+          episodeId: ep.id,
+          ext: ep.container_extension || 'mp4',
+          seriesId: series.id,
+          title: '',
+          season: Number(ep.season),
+          episodeNum: Number(ep.episode_num),
+        },
+        profileId,
+      );
       const pct =
         watched && watched.durationMs > 0
           ? Math.min(100, (watched.positionMs / watched.durationMs) * 100)

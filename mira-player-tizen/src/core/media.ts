@@ -9,7 +9,6 @@ export interface MediaItem {
   searchNorm?: string;
 }
 
-// Payload mínimo para reconstruir la URL de reproducción y reanudar.
 export type ResumePayload =
   | { kind: 'live'; streamId: number }
   | { kind: 'movie'; streamId: number; ext: string }

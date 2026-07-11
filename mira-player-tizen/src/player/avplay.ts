@@ -1,7 +1,3 @@
-// Envoltorio del reproductor. En la TV usa webapis.avplay (decodificación
-// nativa, mejor para live/codecs). En navegador (dev) cae a <video> con HLS
-// nativo si el navegador lo soporta, solo para validar la UI.
-
 export interface PlaybackHandlers {
   onReady?: (durationMs: number) => void;
   onTime?: (currentMs: number) => void;
@@ -14,7 +10,7 @@ export interface Player {
   play(url: string, handlers: PlaybackHandlers): void;
   pause(): void;
   resume(): void;
-  togglePause(): boolean; // devuelve true si quedó en pausa
+  togglePause(): boolean;
   seekBy(deltaMs: number): void;
   stop(): void;
   getState(): string;

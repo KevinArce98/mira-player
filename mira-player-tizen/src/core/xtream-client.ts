@@ -40,8 +40,6 @@ export function normalizeServer(server: string): string {
   return trimmed;
 }
 
-// La app Tizen corre desde file:// (sin restricción mixed-content), así que
-// las URLs de API y de streams se usan directas, sin proxy.
 export class XtreamClient {
   private readonly server: string;
   private readonly username: string;

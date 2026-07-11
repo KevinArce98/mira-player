@@ -1,4 +1,5 @@
 import type { StoredAccount } from '@/core/store';
+import { createId } from '@/core/id';
 import { deleteProfile, listProfiles, upsertProfile } from '@/core/profiles';
 import { setActiveProfileId, setCursor } from './sync-meta';
 import { getDeviceId, getSyncSecret, saveSyncSecret, setDeviceId } from './secret-store';
@@ -20,7 +21,7 @@ async function doBootstrap(account: StoredAccount, acctKey: string): Promise<voi
 
   let deviceId = getDeviceId();
   if (!deviceId) {
-    deviceId = crypto.randomUUID();
+    deviceId = createId();
     setDeviceId(deviceId);
   }
 

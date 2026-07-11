@@ -4,6 +4,7 @@ import { back, replace } from '@/core/router';
 import type { Screen } from '@/core/router';
 import { getSession } from '@/core/session';
 import { completeProgress, saveProgress } from '@/core/progress';
+import { getActiveProfileId } from '@/services/sync/sync-meta';
 import { runSync } from '@/services/sync/engine';
 import type { MediaItem, ResumePayload } from '@/core/media';
 import { el } from './dom';
@@ -17,9 +18,17 @@ export interface PlayerOptions {
 
 const SEEK_MS = 15000;
 const SAVE_EVERY_MS = 5000;
+
+function formatTime(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const mm = String(minutes).padStart(hours > 0 ? 2 : 1, '0');
+  const ss = String(seconds).padStart(2, '0');
+  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
+}
 const NEXT_COUNTDOWN_SECONDS = 10;
-// Xtream no expone metadata de créditos: se aproxima mostrando el aviso
-// cuando quedan estos segundos para el final.
 const NEXT_EPISODE_LEAD_MS = 30000;
 
 interface NextEpisodeInfo {
@@ -31,6 +40,7 @@ interface NextEpisodeInfo {
 export function createPlayerScreen(opts: PlayerOptions): Screen {
   const player = getPlayer();
   const { client, acctKey } = getSession();
+  const profileId = getActiveProfileId(acctKey);
   const live = opts.resume.kind === 'live';
   let durationMs = 0;
   let positionMs = 0;
@@ -38,6 +48,8 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
   let lastSaved = 0;
   let overlay: HTMLElement;
   let bar: HTMLElement;
+  let elapsedEl: HTMLElement;
+  let durationEl: HTMLElement;
   let status: HTMLElement;
   let epgEl: HTMLElement;
   let spinner: HTMLElement;
@@ -60,7 +72,7 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
 
   function persist(): void {
     if (live || durationMs <= 0) return;
-    saveProgress(acctKey, opts.media, opts.resume, positionMs, durationMs);
+    saveProgress(acctKey, opts.media, opts.resume, positionMs, durationMs, profileId);
   }
 
   function streamUrl(): string {
@@ -70,8 +82,6 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     return client.seriesStreamUrl(r.episodeId, r.ext);
   }
 
-  // Busca el siguiente episodio de la serie (misma temporada o la próxima).
-  // Devuelve null si no hay más episodios o si algo falla.
   async function resolveNextEpisode(): Promise<NextEpisodeInfo | null> {
     const r = opts.resume;
     if (r.kind !== 'series') return null;
@@ -118,9 +128,6 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     return cachedNext;
   }
 
-  // Muestra el aviso apenas se cruza el umbral de "créditos" (ver
-  // NEXT_EPISODE_LEAD_MS), sin countdown forzado: el video sigue
-  // reproduciéndose y el avance real ocurre en onEnd cuando de verdad termina.
   function showNextPromptEarly(info: NextEpisodeInfo): void {
     pendingNext = info;
     nextEarly = true;
@@ -130,8 +137,6 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     nextOverlay.classList.add('next-overlay-early');
   }
 
-  // Fallback (el umbral nunca se cruzó a tiempo, ej. duración desconocida):
-  // 10s de cuenta regresiva con opción de cancelar, tipo Netflix, igual que antes.
   async function playNextEpisode(): Promise<void> {
     const info = await ensureNextFetched();
     if (!info) {
@@ -173,7 +178,7 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     const info = pendingNext;
     stopNextCountdown();
     if (!info) return;
-    completeProgress(acctKey, opts.media, opts.resume);
+    completeProgress(acctKey, opts.media, opts.resume, profileId);
     await replace(() => createPlayerScreen({ title: info.title, media: info.media, resume: info.resume }));
   }
 
@@ -181,8 +186,6 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
     const wasEarly = nextEarly;
     stopNextCountdown();
     nextEarly = false;
-    // Si era el aviso temprano, solo se oculta: el video sigue reproduciéndose
-    // y avanzará solo cuando termine de verdad (ver onEnd).
     if (!wasEarly) void back();
   }
 
@@ -207,12 +210,16 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
       epgEl = el('div', { class: 'player-epg', html: '' });
       bar = el('div', {}, []);
       const progress = el('div', { class: 'progress' }, [bar]);
+      elapsedEl = el('span', { class: 'player-time-elapsed', html: '0:00' });
+      durationEl = el('span', { class: 'player-time-duration', html: '0:00' });
+      const time = el('div', { class: 'player-time' }, [elapsedEl, durationEl]);
 
       overlay = el('div', { class: 'player-overlay' }, [
         el('div', { class: 'player-now', html: escapeHtml(opts.title) }),
         status,
         epgEl,
         live ? el('div', {}) : progress,
+        live ? el('div', {}) : time,
         el('div', {
           class: 'player-hint',
           html: live ? 'OK pausa · Atrás para volver' : 'OK pausa · ◀ ▶ 15s · Atrás para volver',
@@ -240,6 +247,7 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
         onReady: (d) => {
           durationMs = d;
           spinner.style.display = 'none';
+          if (!live && durationMs > 0) durationEl.textContent = `-${formatTime(durationMs)}`;
           if (!live && !resumed && (opts.startMs ?? 0) > 3000) {
             resumed = true;
             player.seekBy(opts.startMs!);
@@ -249,6 +257,8 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
           positionMs = t;
           if (!live && durationMs > 0) {
             bar.style.width = `${Math.min(100, (t / durationMs) * 100)}%`;
+            elapsedEl.textContent = formatTime(t);
+            durationEl.textContent = `-${formatTime(Math.max(0, durationMs - t))}`;
             if (t - lastSaved > SAVE_EVERY_MS) {
               lastSaved = t;
               persist();
@@ -275,14 +285,10 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
             return;
           }
           if (pendingNext) {
-            // El aviso ya estaba visible (créditos) y no se canceló: el
-            // video terminó de verdad, avanzamos ya.
             void confirmPlayNext();
             return;
           }
           if (nextFetchAttempted) {
-            // Se mostró antes y se canceló (o no había siguiente episodio):
-            // el video terminó de verdad, avanza directo sin volver a preguntar.
             if (cachedNext) {
               const info = cachedNext;
               void replace(() => createPlayerScreen({ title: info.title, media: info.media, resume: info.resume }));
@@ -291,7 +297,6 @@ export function createPlayerScreen(opts: PlayerOptions): Screen {
             }
             return;
           }
-          // Fallback: el umbral nunca se cruzó a tiempo.
           void playNextEpisode();
         },
         onError: (msg) => {

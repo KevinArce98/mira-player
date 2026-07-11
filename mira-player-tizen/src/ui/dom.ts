@@ -1,4 +1,3 @@
-// Helper minimalista para crear elementos sin framework.
 export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   props: Partial<Omit<HTMLElementTagNameMap[K], 'style'>> & {
@@ -36,4 +35,8 @@ export function poster(url: string | null, klass = 'poster'): HTMLImageElement {
     img.src = FALLBACK_POSTER;
   };
   return img;
+}
+
+export function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }

@@ -1,5 +1,3 @@
-// Códigos de tecla del control remoto Samsung. Los básicos (flechas/Enter)
-// coinciden con teclado, así que la app es probable en navegador con flechas.
 export const Key = {
   Left: 37,
   Up: 38,
@@ -20,7 +18,6 @@ export const Key = {
   ColorBlue: 406,
 } as const;
 
-// Teclas que deben registrarse para que el remoto las entregue a la app.
 const MEDIA_KEYS = [
   'MediaPlayPause',
   'MediaPlay',

@@ -1,9 +1,13 @@
-import { el, poster } from './dom';
+import { el, poster, escapeHtml } from './dom';
+import { confirmDialog } from './dialog';
 import type { MediaItem } from '@/core/media';
 import type { ProgressEntry } from '@/core/progress';
 import { getSession } from '@/core/session';
 import { isFavorite, toggleFavorite } from '@/core/favorites';
+import { getActiveProfileId } from '@/services/sync/sync-meta';
 import { runSync } from '@/services/sync/engine';
+
+export { escapeHtml };
 
 interface CardEl extends HTMLElement {
   __item?: MediaItem;
@@ -14,7 +18,7 @@ export function mediaCard(item: MediaItem, onSelect: () => void): HTMLElement {
   const { acctKey } = getSession();
   const channel = item.kind === 'live';
   const star = el('span', { class: 'star', html: '★' });
-  star.style.display = isFavorite(acctKey, item.kind, item.id) ? 'block' : 'none';
+  star.style.display = isFavorite(acctKey, item.kind, item.id, getActiveProfileId(acctKey)) ? 'block' : 'none';
 
   const card: CardEl = el('div', { class: channel ? 'card channel focusable' : 'card focusable' }, [
     star,
@@ -27,9 +31,6 @@ export function mediaCard(item: MediaItem, onSelect: () => void): HTMLElement {
   return card;
 }
 
-// Tarjeta de "Continuar viendo": igual que mediaCard pero con barra de
-// progreso sobre el póster (posición guardada / duración total), más un
-// botón para quitarla de la lista sin necesidad de terminar de verla.
 export function continueCard(entry: ProgressEntry, onSelect: () => void, onRemove: () => void): HTMLElement {
   const pct =
     entry.durationMs > 0 ? Math.min(100, Math.max(0, (entry.positionMs / entry.durationMs) * 100)) : 0;
@@ -40,7 +41,9 @@ export function continueCard(entry: ProgressEntry, onSelect: () => void, onRemov
   });
   removeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (window.confirm(`¿Quitar "${entry.item.name}" de Continuar viendo?`)) onRemove();
+    void confirmDialog(`¿Quitar "${entry.item.name}" de Continuar viendo?`).then((ok) => {
+      if (ok) onRemove();
+    });
   });
   const card = el('div', { class: 'card focusable' }, [
     poster(entry.item.icon),
@@ -52,17 +55,12 @@ export function continueCard(entry: ProgressEntry, onSelect: () => void, onRemov
   return card;
 }
 
-// Alterna favorito de la tarjeta enfocada (tecla amarilla del remoto).
 export function toggleCardFavorite(card: HTMLElement | null): boolean {
   const c = card as CardEl | null;
   if (!c?.__item || !c.__star) return false;
   const { acctKey } = getSession();
-  const nowFav = toggleFavorite(acctKey, c.__item);
+  const nowFav = toggleFavorite(acctKey, c.__item, getActiveProfileId(acctKey));
   c.__star.style.display = nowFav ? 'block' : 'none';
   void runSync();
   return true;
-}
-
-export function escapeHtml(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }

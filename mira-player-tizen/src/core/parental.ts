@@ -8,8 +8,6 @@ export interface ParentalSettings {
 
 const DEFAULT_SETTINGS: ParentalSettings = { adultEnabled: false, pin: DEFAULT_PIN };
 
-// Palabras que suelen usar los proveedores Xtream para nombrar categorías
-// de contenido para adultos (en varios idiomas).
 const ADULT_KEYWORDS = [
   'adult',
   'xxx',
@@ -55,8 +53,6 @@ export function verifyPin(pin: string): boolean {
   return loadParental().pin === pin;
 }
 
-// El contenido para adultos siempre requiere el PIN para activarse; se puede
-// desactivar libremente. Devuelve false si el PIN es incorrecto al activar.
 export function setAdultEnabled(enabled: boolean, pin?: string): boolean {
   const current = loadParental();
   if (enabled && current.pin !== pin) return false;

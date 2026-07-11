@@ -4,8 +4,6 @@ import type { MediaItem, MediaKind } from './media';
 import { isAdultCategoryName, isAdultEnabled } from './parental';
 import { normalizeSearchText } from './search-text';
 
-// Capa sobre XtreamClient: normaliza a MediaItem y cachea categorías y listados
-// para no repetir peticiones al moverse por el catálogo o al buscar.
 export class Library {
   private catCache = new Map<MediaKind, Promise<XtreamCategory[]>>();
   private contentCache = new Map<string, Promise<MediaItem[]>>();
@@ -13,8 +11,6 @@ export class Library {
 
   constructor(private readonly client: XtreamClient) {}
 
-  // Categorías sin filtrar (uso interno, para poder detectar cuáles son de
-  // contenido adulto aunque estén ocultas por control parental).
   private rawCategories(kind: MediaKind): Promise<XtreamCategory[]> {
     let p = this.catCache.get(kind);
     if (!p) {
@@ -29,7 +25,6 @@ export class Library {
     return p;
   }
 
-  // Control parental: el contenido adulto está oculto por defecto.
   private async adultCategoryIds(kind: MediaKind): Promise<Set<string>> {
     if (isAdultEnabled()) return new Set();
     const cats = await this.rawCategories(kind);
@@ -44,8 +39,6 @@ export class Library {
     return cats.filter((c) => !isAdultCategoryName(c.category_name));
   }
 
-  // Limpia toda la caché; hay que llamarlo si cambia el ajuste de control
-  // parental para que el catálogo se recalcule con el nuevo filtro.
   clearCache(): void {
     this.catCache.clear();
     this.contentCache.clear();
@@ -102,7 +95,6 @@ export class Library {
       }));
   }
 
-  // Listado completo de un tipo (sin categoría), cacheado para búsqueda.
   all(kind: MediaKind): Promise<MediaItem[]> {
     let p = this.allCache.get(kind);
     if (!p) {

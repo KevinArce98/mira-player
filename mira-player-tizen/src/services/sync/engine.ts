@@ -1,4 +1,5 @@
 import { getSession, type Session } from '@/core/session';
+import { createId } from '@/core/id';
 import { loadAccount } from '@/core/store';
 import { progressKey, type MediaItem, type ResumePayload } from '@/core/media';
 import { listAllProgressEntries, applyRemoteProgress, markAllSynced } from '@/core/progress';
@@ -78,13 +79,14 @@ export async function runSync(): Promise<{ ok: boolean; reason?: string }> {
   }
 }
 
-// Sin flag `dirty`: siempre se reenvía el estado local completo (progreso no
-// vencido max 30 entradas, favoritos activos+tombstones). El merge del
-// servidor es idempotente (MAX posición, OR completado, tombstone por fecha),
-// así que reenviar no rompe nada y evita la clase de bug de "dirty atascado"
-// encontrada en mobile/web.
+function ownsEntry(entryProfileId: string | null, profileId: string): boolean {
+  return entryProfileId === null || entryProfileId === profileId;
+}
+
 async function pushAll(secret: string, profileId: string, acctKey: string): Promise<void> {
-  const progressEntries = listAllProgressEntries(acctKey).filter((e) => e.resume.kind !== 'live');
+  const progressEntries = listAllProgressEntries(acctKey).filter(
+    (e) => e.resume.kind !== 'live' && ownsEntry(e.profileId, profileId),
+  );
   const progress: PushProgress[] = progressEntries.map((e) => ({
     canonicalKey: progressKey(e.resume),
     posicionSegundos: Math.round(e.positionMs / 1000),
@@ -94,15 +96,17 @@ async function pushAll(secret: string, profileId: string, acctKey: string): Prom
     deletedAt: e.deletedAt,
   }));
 
-  const favorites: PushFavorite[] = listAllFavoriteEntries(acctKey).map((e) => ({
-    canonicalKey: buildFavoriteCanonicalKey(e.item.kind, e.item.id),
-    createdAt: e.createdAt,
-    deletedAt: e.deletedAt,
-  }));
+  const favorites: PushFavorite[] = listAllFavoriteEntries(acctKey)
+    .filter((e) => ownsEntry(e.profileId, profileId))
+    .map((e) => ({
+      canonicalKey: buildFavoriteCanonicalKey(e.item.kind, e.item.id),
+      createdAt: e.createdAt,
+      deletedAt: e.deletedAt,
+    }));
 
   if (progress.length === 0 && favorites.length === 0) return;
   await push(secret, { profileId, progress, favorites });
-  markAllSynced(acctKey, Date.now());
+  markAllSynced(acctKey, Date.now(), profileId);
 }
 
 async function pullProfiles(secret: string, acctKey: string): Promise<void> {
@@ -120,7 +124,7 @@ async function pullProfiles(secret: string, acctKey: string): Promise<void> {
   const active = getActiveProfileId(acctKey);
   const remaining = listProfiles(acctKey);
   if (!active || !remaining.some((r) => r.id === active)) {
-    const fallback = remaining[0]?.id ?? upsertProfile(acctKey, { id: crypto.randomUUID(), nombre: 'Principal' }).id;
+    const fallback = remaining[0]?.id ?? upsertProfile(acctKey, { id: createId(), nombre: 'Principal' }).id;
     setActiveProfileId(acctKey, fallback);
   }
 }
@@ -137,10 +141,10 @@ async function pullAndApply(
 
   let allResolved = true;
   for (const item of result.progress) {
-    if (!(await applyPulledProgress(acctKey, session, item))) allResolved = false;
+    if (!(await applyPulledProgress(acctKey, session, item, profileId))) allResolved = false;
   }
   for (const item of result.favorites) {
-    if (!(await applyPulledFavorite(acctKey, session, item))) allResolved = false;
+    if (!(await applyPulledFavorite(acctKey, session, item, profileId))) allResolved = false;
   }
 
   if (allResolved) {
@@ -167,7 +171,12 @@ async function pullAndApply(
   }
 }
 
-async function applyPulledFavorite(acctKey: string, session: Session, item: PushFavorite): Promise<boolean> {
+async function applyPulledFavorite(
+  acctKey: string,
+  session: Session,
+  item: PushFavorite,
+  profileId: string,
+): Promise<boolean> {
   const parsed = parseKey(item.canonicalKey);
   if (!parsed) return false;
 
@@ -178,7 +187,7 @@ async function applyPulledFavorite(acctKey: string, session: Session, item: Push
     const mediaItem = list.find((i) => i.id === id);
     if (!mediaItem) return false;
 
-    applyRemoteFavorite(acctKey, mediaItem, item.createdAt, item.deletedAt);
+    applyRemoteFavorite(acctKey, mediaItem, item.createdAt, item.deletedAt, profileId);
     return true;
   } catch (err) {
     console.warn('[sync] failed to resolve favorite', item.canonicalKey, err);
@@ -186,7 +195,12 @@ async function applyPulledFavorite(acctKey: string, session: Session, item: Push
   }
 }
 
-async function applyPulledProgress(acctKey: string, session: Session, item: PushProgress): Promise<boolean> {
+async function applyPulledProgress(
+  acctKey: string,
+  session: Session,
+  item: PushProgress,
+  profileId: string,
+): Promise<boolean> {
   const parsed = parseKey(item.canonicalKey);
   if (!parsed) return false;
   if (parsed.kind === 'live') return true;
@@ -204,17 +218,22 @@ async function applyPulledProgress(acctKey: string, session: Session, item: Push
         streamId: parsed.id,
         ext: mediaItem.containerExtension || 'mp4',
       };
-      applyRemoteProgress(acctKey, {
-        key: progressKey(resume),
-        item: mediaItem,
-        resume,
-        positionMs,
-        durationMs,
-        updatedAt: item.lastWatchedAt,
-        completado: item.completado,
-        deletedAt: item.deletedAt,
-        syncedAt: Date.now(),
-      });
+      applyRemoteProgress(
+        acctKey,
+        {
+          key: progressKey(resume),
+          item: mediaItem,
+          resume,
+          positionMs,
+          durationMs,
+          updatedAt: item.lastWatchedAt,
+          completado: item.completado,
+          deletedAt: item.deletedAt,
+          syncedAt: Date.now(),
+          profileId,
+        },
+        profileId,
+      );
       return true;
     }
 
@@ -242,17 +261,22 @@ async function applyPulledProgress(acctKey: string, session: Session, item: Push
       name: title,
       icon: seriesItem?.icon ?? null,
     };
-    applyRemoteProgress(acctKey, {
-      key: progressKey(resume),
-      item: mediaItem,
-      resume,
-      positionMs,
-      durationMs,
-      updatedAt: item.lastWatchedAt,
-      completado: item.completado,
-      deletedAt: item.deletedAt,
-      syncedAt: Date.now(),
-    });
+    applyRemoteProgress(
+      acctKey,
+      {
+        key: progressKey(resume),
+        item: mediaItem,
+        resume,
+        positionMs,
+        durationMs,
+        updatedAt: item.lastWatchedAt,
+        completado: item.completado,
+        deletedAt: item.deletedAt,
+        syncedAt: Date.now(),
+        profileId,
+      },
+      profileId,
+    );
     return true;
   } catch (err) {
     console.warn('[sync] failed to resolve progress', item.canonicalKey, err);

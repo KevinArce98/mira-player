@@ -38,7 +38,10 @@ body {
 
 #av-player {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 1920px;
   height: 1080px;
   background: #000;
@@ -128,4 +131,8 @@ body {
 
 .anim-fade {
   animation: fadeIn 0.25s ease;
+}
+
+.anim-scale {
+  animation: scaleIn 0.2s ease;
 }

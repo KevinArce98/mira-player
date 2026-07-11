@@ -3,15 +3,15 @@
         xmlns:tizen="http://tizen.org/ns/widgets"
         id="http://mira-player.app/tizen"
         version="1.0.0">
+  <access origin="*" subdomains="true"/>
+  <name>Mira Player</name>
+  <icon src="icon.png"/>
+  <content src="index.html"/>
+  <tizen:setting screen-orientation="landscape" hwkey-event="enable"/>
   <tizen:application id="MiraPlayer.MiraPlayer"
                      package="MiraPlayer"
                      required_version="2.4"/>
-  <name>Mira Player</name>
-  <content src="index.html"/>
-  <icon src="icon.png"/>
-  <tizen:profile name="tv-samsung"/>
-  <access origin="*" subdomains="true"/>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
-  <tizen:setting screen-orientation="landscape" hwkey-event="enable"/>
+  <tizen:profile name="tv-samsung"/>
 </widget>

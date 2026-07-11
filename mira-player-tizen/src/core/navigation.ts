@@ -24,7 +24,6 @@ function setFocus(el: HTMLElement | null): void {
   if (current) {
     current.classList.add('focused');
     current.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
-    // Inputs necesitan foco real del DOM para abrir el teclado de la TV.
     if (current instanceof HTMLInputElement || current instanceof HTMLTextAreaElement) {
       current.focus();
     } else if (document.activeElement instanceof HTMLElement) {
@@ -33,8 +32,6 @@ function setFocus(el: HTMLElement | null): void {
   }
 }
 
-// Elige el candidato más cercano en la dirección dada, penalizando el
-// desalineamiento en el eje perpendicular para no "saltar" de fila/columna.
 function findNext(dir: Direction): HTMLElement | null {
   if (!current) return focusables()[0] ?? null;
   const from = center(current);
@@ -101,7 +98,6 @@ export function resetFocus(): void {
   current = null;
 }
 
-// Devuelve true si la navegación consumió la tecla.
 export function handleNavKey(keyCode: number): boolean {
   switch (keyCode) {
     case Key.Left:

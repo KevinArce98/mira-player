@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite';
 import { fileURLToPath, URL } from 'node:url';
 
-// Tizen sirve la app desde file://. Quitamos crossorigin y type="module"
-// (los módulos ES no ejecutan desde file:// en el browser embebido de Tizen).
 function tizenHtmlFix() {
   return {
     name: 'tizen-html-fix',
+    apply: 'build' as const,
     transformIndexHtml(html: string) {
       return html
         .replace(/\s+crossorigin/g, '')

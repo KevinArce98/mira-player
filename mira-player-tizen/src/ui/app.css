@@ -31,14 +31,29 @@
   width: 52px;
   height: 52px;
   border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.side-brand img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.side-profile {
+  margin-bottom: 28px;
+}
+.side-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
   background: var(--tint);
   color: var(--on-tint);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 26px;
-  margin-bottom: 44px;
+  font-size: 15px;
+  font-weight: 700;
 }
 .side-nav {
   flex: 1;
@@ -226,6 +241,63 @@
   background: var(--bg-selected);
   color: var(--text);
 }
+.dialog-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+}
+.dialog-box {
+  width: 720px;
+  background: var(--bg-element);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 48px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.dialog-message {
+  font-size: 26px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  margin-top: 36px;
+}
+.dialog-btn-danger {
+  background: var(--danger);
+  color: var(--shadow-grey);
+}
+.dialog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 32px;
+  max-height: 560px;
+  overflow-y: auto;
+}
+.dialog-profile-row {
+  width: 100%;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+.dialog-profile-row.dialog-profile-row-active {
+  background: var(--tint);
+  color: var(--on-tint);
+}
+.dialog-profile-tag {
+  font-size: 16px;
+  font-weight: 600;
+  opacity: 0.75;
+}
 .error-banner {
   background: rgba(224, 133, 122, 0.15);
   border: 1px solid var(--danger);
@@ -364,8 +436,11 @@
 
 /* ---- Player overlay ---- */
 .player-overlay {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
   z-index: 4;
   display: flex;
   flex-direction: column;
@@ -400,13 +475,20 @@
   width: 0;
   background: var(--tint);
 }
+.player-time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
 .player-hint {
   margin-top: 20px;
   font-size: 20px;
   color: var(--text-secondary);
 }
 .spinner {
-  position: fixed;
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -423,8 +505,11 @@
 
 /* ---- Cuenta regresiva de siguiente episodio ---- */
 .next-overlay {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
   z-index: 6;
   display: flex;
   flex-direction: column;
@@ -646,6 +731,7 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 40px 48px;
+  margin-bottom: 32px;
 }
 .settings-row {
   display: flex;

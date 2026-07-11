@@ -1,4 +1,5 @@
 import { loadAccount, clearAccount } from '@/core/store';
+import { createId } from '@/core/id';
 import { initSession, clearSession } from '@/core/session';
 import { ensureSyncBootstrapped } from '@/services/sync/bootstrap';
 import { runSync } from '@/services/sync/engine';
@@ -18,10 +19,16 @@ import { loadParental, setAdultEnabled, setPin } from '@/core/parental';
 import { getCategoryOrder, setCategoryOrder, applyCategoryOrder } from '@/core/category-order';
 import { el } from './dom';
 import { mediaCard, continueCard, toggleCardFavorite, escapeHtml } from './cards';
+import { confirmDialog, alertDialog, profilePickerDialog } from './dialog';
 import { openMedia } from './actions';
 import { createPlayerScreen } from './player-screen';
 import { createDetailScreen } from './detail';
 import { createSetupScreen } from './setup';
+import brandIconUrl from '../../icon.png';
+
+function profileInitial(name: string): string {
+  return (name.trim().charAt(0) || '?').toUpperCase();
+}
 
 type Tab = 'home' | 'live' | 'movies' | 'series' | 'search' | 'settings';
 
@@ -61,8 +68,6 @@ export function createHomeScreen(): Screen {
   let activeTab: Tab = 'home';
   let content: HTMLElement;
 
-  // Estado de navegación que sobrevive a volver del reproductor (misma
-  // instancia de HomeScreen, solo se vuelve a invocar render()).
   let lastSearchTerm = '';
   const lastCategoryByKind: Partial<Record<MediaKind, string | undefined>> = {};
   let focusCategoryOverride: string | undefined;
@@ -103,8 +108,6 @@ export function createHomeScreen(): Screen {
     return (await library.content(kind, cats[0]?.category_id)).slice(0, 24);
   }
 
-  // Título limpio para el hero: si viene de "continuar viendo" una serie,
-  // el nombre guardado es "Serie — Episodio"; nos quedamos solo con la serie.
   function heroTitle(item: MediaItem): string {
     if (item.kind === 'series') return item.name.split(' — ')[0] || item.name;
     return item.name;
@@ -145,8 +148,9 @@ export function createHomeScreen(): Screen {
   }
 
   async function renderHome(): Promise<void> {
-    const watching = continueWatching(acctKey);
-    const favs = listFavorites(acctKey);
+    const profileId = getActiveProfileId(acctKey);
+    const watching = continueWatching(acctKey, profileId);
+    const favs = listFavorites(acctKey, profileId);
     const [live, movies, series] = await Promise.all([
       firstCategoryItems('live'),
       firstCategoryItems('movie'),
@@ -166,7 +170,7 @@ export function createHomeScreen(): Screen {
               e,
               () => resumeEntry(e),
               () => {
-                removeProgress(acctKey, e.resume);
+                removeProgress(acctKey, e.resume, profileId);
                 void renderHome();
               },
             ),
@@ -206,8 +210,6 @@ export function createHomeScreen(): Screen {
       grid.append(el('div', { class: 'grid' }, items.map((it) => mediaCard(it, () => openMedia(it)))));
     }
 
-    // Reordenar categorías (rojo/verde), con persistencia por cuenta. Solo
-    // mueve el orden y el foco; no cambia la categoría de contenido activa.
     function moveCategory(catId: string, delta: -1 | 1): void {
       const ids = cats.map((c) => c.category_id);
       const from = ids.indexOf(catId);
@@ -425,19 +427,21 @@ export function createHomeScreen(): Screen {
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (active) {
-          window.alert('Cambia a otro perfil antes de eliminar el que está activo.');
+          void alertDialog('Cambia a otro perfil antes de eliminar el que está activo.');
           return;
         }
-        const ok = window.confirm(
+        void confirmDialog(
           `Se eliminará "${p.nombre}" y su progreso y favoritos. Esta acción no se puede deshacer.`,
-        );
-        if (!ok) return;
-        deleteProfile(acctKey, p.id);
-        if (isSyncConfigured()) {
-          const secret = getSyncSecret();
-          if (secret) void deleteProfileRemote(secret, p.id).catch(() => undefined);
-        }
-        renderSettings();
+          'Eliminar',
+        ).then((ok) => {
+          if (!ok) return;
+          deleteProfile(acctKey, p.id);
+          if (isSyncConfigured()) {
+            const secret = getSyncSecret();
+            if (secret) void deleteProfileRemote(secret, p.id).catch(() => undefined);
+          }
+          renderSettings();
+        });
       });
 
       return el('div', { class: 'settings-row-group' }, [row, renameBtn, deleteBtn]);
@@ -448,7 +452,7 @@ export function createHomeScreen(): Screen {
     addProfileBtn.addEventListener('click', () => {
       const name = newProfileInput.value.trim();
       if (!name) return;
-      const profile = upsertProfile(acctKey, { id: crypto.randomUUID(), nombre: name });
+      const profile = upsertProfile(acctKey, { id: createId(), nombre: name });
       setActiveProfileId(acctKey, profile.id);
       if (isSyncConfigured()) {
         const secret = getSyncSecret();
@@ -496,8 +500,29 @@ export function createHomeScreen(): Screen {
         void reset(createSetupScreen);
       });
 
+      const profileBtn = el('div', { class: 'side-item side-profile focusable' });
+      const refreshProfileBtn = () => {
+        const activeId = getActiveProfileId(acctKey);
+        const profile = listProfiles(acctKey).find((p) => p.id === activeId) ?? null;
+        const name = profile?.nombre ?? 'Perfil';
+        profileBtn.innerHTML = `<span class="side-avatar">${escapeHtml(profileInitial(name))}</span><span class="side-label">${escapeHtml(name)}</span>`;
+      };
+      refreshProfileBtn();
+      profileBtn.addEventListener('click', () => {
+        const profiles = listProfiles(acctKey);
+        const activeId = getActiveProfileId(acctKey);
+        void profilePickerDialog(profiles, activeId).then((id) => {
+          if (!id || id === activeId) return;
+          setActiveProfileId(acctKey, id);
+          refreshProfileBtn();
+          void renderContent();
+          void runSync().then(() => renderContent());
+        });
+      });
+
       const sidebar = el('div', { class: 'sidebar' }, [
-        el('div', { class: 'side-brand', html: 'M' }),
+        el('div', { class: 'side-brand' }, [el('img', { src: brandIconUrl, alt: 'Mira Player' })]),
+        profileBtn,
         el('div', { class: 'side-nav' }, tabEls),
         exitBtn,
       ]);
